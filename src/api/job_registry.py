@@ -226,6 +226,8 @@ class JobRegistry:
         active = self.store.state("job:" + key)
         if not active:
             raise HTTPException(404, "Job chưa có snapshot QC được xuất bản")
+        if active["task_id"] not in self.cfg["allowed_task_ids"]:
+            raise HTTPException(403, "Task đã được operator gỡ quyền tiếp nhận")
         if key not in self.apps:
             from src.api.main import create_app
 

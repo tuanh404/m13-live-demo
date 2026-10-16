@@ -137,7 +137,7 @@ $("check-job").onclick=async()=>{
     if(operation.status==='failed')throw new Error(operation.message);
     selected=null;$("selected").hidden=true;await loadQueue();
   }catch(e){error(e.message);}
-  finally{saving=false;$("check-job").disabled=false;actions();}
+  finally{saving=false;$("check-job").disabled=false;actions();renderQueue();}
 };
 async function loadStats() {
   const params = query(); params.delete("offset"); params.delete("limit");
