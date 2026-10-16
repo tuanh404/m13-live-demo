@@ -11,6 +11,9 @@ from src.api.settings import Settings
 
 
 def create_render_app():
+    import faulthandler
+
+    print("M13 startup: validating backend configuration", flush=True)
     url, secret = os.environ.get("M13_DATABASE_URL"), os.environ.get("M13_AUTH_SECRET", "")
     origin = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("M13_PUBLIC_ORIGIN", "")
     if not url or len(secret) < 32 or not origin.startswith("https://"):
@@ -24,7 +27,14 @@ def create_render_app():
         import tempfile
 
         artifacts = Path(tempfile.mkdtemp(prefix="assets-", dir=root))
-    descriptor = hydrate(bundle, artifacts)
+    # A slow startup must leave a useful diagnostic, without logging config values.
+    faulthandler.dump_traceback_later(60)
+    try:
+        print("M13 startup: loading immutable demo assets", flush=True)
+        descriptor = hydrate(bundle, artifacts)
+    finally:
+        faulthandler.cancel_dump_traceback_later()
+    print("M13 startup: assets verified; preparing review API", flush=True)
     accounts = root / "accounts.json"
     atomic_json(
         accounts,
@@ -66,4 +76,10 @@ def create_render_app():
     )
     from src.api.main import create_app
 
-    return create_app(settings)
+    faulthandler.dump_traceback_later(60)
+    try:
+        app = create_app(settings)
+    finally:
+        faulthandler.cancel_dump_traceback_later()
+    print("M13 startup: review API ready", flush=True)
+    return app

@@ -109,11 +109,13 @@ def prepare_bundle(source, output, *, acquisition, evaluation=None):
 def database():
     import psycopg
 
+    from src.api.postgres import CONNECTION_OPTIONS
+
     url = os.environ.get("M13_DATABASE_URL")
     if not url:
         raise ValueError("Thiếu M13_DATABASE_URL trong môi trường backend")
     try:
-        return psycopg.connect(url, connect_timeout=15)
+        return psycopg.connect(url, **CONNECTION_OPTIONS)
     except psycopg.Error:
         raise RuntimeError("Không kết nối được database cloud") from None
 
@@ -124,9 +126,13 @@ def asset_schema(db):
         content BYTEA NOT NULL,PRIMARY KEY(bundle_id,name))""")
     db.execute("""CREATE OR REPLACE FUNCTION m13_assets_append_only() RETURNS trigger
         LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'demo assets are immutable'; END $$""")
-    db.execute("DROP TRIGGER IF EXISTS demo_assets_immutable ON demo_assets")
-    db.execute("""CREATE TRIGGER demo_assets_immutable BEFORE UPDATE OR DELETE ON demo_assets
-        FOR EACH ROW EXECUTE FUNCTION m13_assets_append_only()""")
+    db.execute("""DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='demo_assets_immutable'
+            AND tgrelid='demo_assets'::regclass AND NOT tgisinternal) THEN
+            CREATE TRIGGER demo_assets_immutable BEFORE UPDATE OR DELETE ON demo_assets
+                FOR EACH ROW EXECUTE FUNCTION m13_assets_append_only();
+        END IF;
+    END $$""")
 
 
 def upload_bundle(folder):

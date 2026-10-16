@@ -94,3 +94,20 @@ def test_real_postgres_auth_queue_verdict_persistence_without_local_files(pg_url
     ]
     assert not secured.database.is_file()
     assert "postgres" not in json.dumps(restarted.get("/auth/session").json()).lower()
+
+
+def test_restart_while_backup_reader_holds_table_lock(pg_url, tmp_path):
+    import psycopg
+
+    ReviewStore(tmp_path / "unused.db", pg_url).state("startup", {"ready": True})
+    with psycopg.connect(pg_url) as reader:
+        reader.execute("SELECT * FROM verdicts").fetchall()
+        # A read-only backup remains open. Restart must not DROP the existing trigger.
+        restarted = ReviewStore(tmp_path / "new.db", pg_url)
+        with restarted.connection() as db:
+            assert db.execute("SHOW statement_timeout").fetchone()[0] == "20s"
+            assert db.execute("SHOW lock_timeout").fetchone()[0] == "15s"
+            assert db.execute("""SELECT count(*) FROM pg_trigger
+                WHERE tgname='verdicts_append_only' AND tgenabled='O'
+                AND tgrelid='verdicts'::regclass""").fetchone()[0] == 1
+        assert restarted.state("startup") == {"ready": True}

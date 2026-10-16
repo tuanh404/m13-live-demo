@@ -7,6 +7,16 @@ lock instead, preserving lost-ACK deduplication and login/start atomicity.
 
 from contextlib import contextmanager
 
+CONNECTION_OPTIONS = {
+    "connect_timeout": 15,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10,
+    "keepalives_count": 3,
+    "tcp_user_timeout": 30000,
+    "options": "-c statement_timeout=20000 -c lock_timeout=15000",
+    "application_name": "m13-review",
+}
+
 
 class Record(dict):
     def __getitem__(self, key):
@@ -47,10 +57,15 @@ def initialize(db):
     db.execute("CREATE TABLE IF NOT EXISTS state (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
     db.execute("""CREATE OR REPLACE FUNCTION m13_verdict_append_only() RETURNS trigger
         LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'verdict history is append-only'; END $$""")
-    # DDL under the transaction lock is safe across concurrent application starts.
-    db.execute("DROP TRIGGER IF EXISTS verdicts_append_only ON verdicts")
-    db.execute("""CREATE TRIGGER verdicts_append_only BEFORE UPDATE OR DELETE ON verdicts
-        FOR EACH ROW EXECUTE FUNCTION m13_verdict_append_only()""")
+    # Existing readers (including a backup) must not block application restarts.
+    # DROP TRIGGER would need an exclusive table lock even when nothing changed.
+    db.execute("""DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='verdicts_append_only'
+            AND tgrelid='verdicts'::regclass AND NOT tgisinternal) THEN
+            CREATE TRIGGER verdicts_append_only BEFORE UPDATE OR DELETE ON verdicts
+                FOR EACH ROW EXECUTE FUNCTION m13_verdict_append_only();
+        END IF;
+    END $$""")
 
 
 @contextmanager
@@ -59,7 +74,7 @@ def connection(store):
 
     # Never interpolate the URL into an exception or log message.
     try:
-        db = psycopg.connect(store.database_url, connect_timeout=15, row_factory=record_factory)
+        db = psycopg.connect(store.database_url, **CONNECTION_OPTIONS, row_factory=record_factory)
     except psycopg.Error:
         raise RuntimeError("Không kết nối được database; kiểm tra cấu hình backend") from None
     with db:
