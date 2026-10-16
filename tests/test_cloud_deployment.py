@@ -2,6 +2,8 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,6 +16,16 @@ from src.api.cloud import asset_name, backup_cloud, hydrate, prepare_bundle, res
 from src.api.render_app import create_render_app
 from src.api.saved_labels import canonical
 from src.api.store import ReviewStore
+
+
+def test_import_factory_does_not_boot_unconfigured_default_app():
+    result = subprocess.run(
+        [sys.executable, '-c', 'from src.api.main import create_app; print(callable(create_app))'],
+        env={**os.environ, 'M13_PUBLIC_ORIGIN': 'https://factory.example.test'},
+        capture_output=True, text=True, timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == 'True'
 
 
 def test_cloud_rejects_private_paths_and_fixture_claimed_real(web_settings, tmp_path):

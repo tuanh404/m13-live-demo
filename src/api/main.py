@@ -260,4 +260,11 @@ def create_app(
     return app
 
 
-app = create_app()
+def __getattr__(name):
+    # Uvicorn's legacy src.api.main:app entrypoint still works. Importing the
+    # factory for Render must not boot a second app with incomplete local paths.
+    if name != "app":
+        raise AttributeError(name)
+    application = create_app()
+    globals()["app"] = application
+    return application
