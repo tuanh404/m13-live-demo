@@ -1,0 +1,6 @@
+# Local and shared demo security; unrelated to scorer/ML policy.
+session_seconds: 43200
+password_iterations: 600000
+login_attempts: 10
+login_window_seconds: 300
+max_body_bytes: 32768

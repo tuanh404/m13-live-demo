@@ -1,0 +1,18 @@
+{
+  "python_image": {
+    "tag": "3.11-slim-bookworm",
+    "manifest_digest": "sha256:0a310eeecf4e1f5a0743f9a6520c90c88d089c903ca5fd283f501e3a805f5f89",
+    "metadata_source": "https://hub.docker.com/v2/repositories/library/python/tags/3.11-slim-bookworm"
+  },
+  "caddy": {
+    "version": "v2.11.7",
+    "release": "https://github.com/caddyserver/caddy/releases/tag/v2.11.7",
+    "checksum_algorithm": "sha512",
+    "expected_archive_digest": "a7a433a1b133efc3c8d10eb0b99d52a24b5ef5c322dc77f5282182b1c0402139ab83f3a99f0c52409df77d20123fb0b523edad8a66d8f5e49136197bf61ef0e7",
+    "archive_url": "https://github.com/caddyserver/caddy/releases/download/v2.11.7/caddy_2.11.7_linux_amd64.tar.gz",
+    "binary_sha256": "678ade3bfc088749c81a681adc603333ee0bb023b6a6cfe3c0f58bef8ff854e9"
+  },
+  "runtime_lock_sha256": "cebaf903345141f6afe62c05d95d73c19115b031e8abf0afa3c62ccacc80acd8",
+  "runtime_verified": "native Python3.11 x86_64; Docker config only, daemon access unavailable",
+  "public_live_verified": false
+}

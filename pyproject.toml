@@ -1,0 +1,46 @@
+[project]
+name = "m13-reviewer-prioritization"
+version = "0.1.0"
+description = "Ưu tiên review nhãn detection 2D trên BDD100K"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=14",
+    "scipy>=1.11",
+    "pyyaml>=6",
+    "pydantic>=2.5",
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "matplotlib>=3.8",
+    "httpx>=0.27", # CVAT sync và Gemini REST
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]==3.3.3"]
+gbm = ["lightgbm>=4.1"]
+detector = ["torch>=2.1", "transformers>=4.45", "pillow>=10.1"]  # RT-DETR qua transformers (Apache-2.0)
+guideline = ["python-docx>=1.1", "pdfplumber>=0.10"]
+browser = ["playwright>=1.50", "pillow>=10.1"]
+demo = ["pillow>=10.1"]
+dev = ["pytest>=8", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"src.api" = ["web/*.html", "web/*.css", "web/*.js"]
+"src.guideline" = ["web/*.html", "web/*.css", "web/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]  # test import lẫn nhau (tests.test_cli_flow) khi chạy bằng lệnh `pytest`
+markers = ["data: cần dữ liệu BDD100K thật trong data/ (tự bỏ qua nếu chưa có)"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = [".claude"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

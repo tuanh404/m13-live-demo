@@ -1,0 +1,54 @@
+name: m13-live-demo
+services:
+  api:
+    image: ${M13_IMAGE:-m13-demo:local-verified}
+    build:
+      context: ../..
+      dockerfile: deployment/mvp/Dockerfile
+    user: "${M13_RUN_UID:-10001}:${M13_RUN_GID:-10001}"
+    env_file: ${M13_DEPLOY_ROOT:?Use generated compose.env}/container.env
+    volumes:
+      - type: bind
+        source: ${M13_DEPLOY_ROOT}
+        target: /app/${M13_DEPLOY_REL:?Use generated compose.env}
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, "import os,urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/health',headers={'Host':os.environ['M13_PUBLIC_ORIGIN'].split('://')[1]}); urllib.request.urlopen(req,timeout=4)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks: [demo]
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+  proxy:
+    image: caddy:2.11.7-alpine
+    environment:
+      M13_SITE: ${M13_SITE:?Set HTTPS hostname}
+      M13_UPSTREAM: api:8000
+    ports:
+      - "${M13_BIND_ADDRESS:-127.0.0.1}:${M13_HTTPS_PORT:-8443}:443"
+      - "${M13_BIND_ADDRESS:-127.0.0.1}:${M13_HTTP_PORT:-8085}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - tls_data:/data
+      - tls_config:/config
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+    networks: [demo]
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+networks:
+  demo: {}
+volumes:
+  tls_data: {}
+  tls_config: {}

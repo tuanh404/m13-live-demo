@@ -1,0 +1,15 @@
+# Local test only. Internal CA is not a publicly trusted certificate.
+{
+	admin off
+	skip_install_trust
+	auto_https disable_redirects
+}
+https://127.0.0.1:8445 {
+	bind 127.0.0.1
+	tls internal
+	encode gzip
+	request_body {
+		max_size 32KB
+	}
+	reverse_proxy 127.0.0.1:8005
+}

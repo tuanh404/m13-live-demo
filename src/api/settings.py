@@ -1,0 +1,94 @@
+"""Local configuration, injectable paths for tests and per-machine installations."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from src import config
+
+
+@dataclass
+class Settings:
+    reports: Path = field(default_factory=lambda: config.path("reports_dir"))
+    database: Path = field(default_factory=lambda: config.path("review_db"))
+    database_url: str | None = field(default=None, repr=False)
+    intake_config: Path | None = None
+    images: Path = field(default_factory=lambda: config.path("images_dir"))
+    predictions: Path = field(default_factory=lambda: config.path("preds_parquet"))
+    mapping: Path = field(default_factory=lambda: config.path("cvat_map"))
+    cvat_url: str = field(default_factory=lambda: config.load("paths")["cvat_url"])
+    queue_file: Path | None = None
+    queue_batches: dict[str, str] = field(default_factory=dict)
+    evidence_file: Path | None = None
+    audit_top_frac: float = 0.2
+    audit_rate: float = 0.05
+    audit_seed: int = 42
+    retrain_after: int = 50
+    max_recall_drop: float = 0.005
+    rank_buckets: tuple[float, ...] = (0.2, 0.5, 1.0)
+    allowed_origins: tuple[str, ...] = ()
+    server_host: str = "127.0.0.1"
+    server_port: int = 8000
+    fixture_dir: str = "data/samples/review"
+    retrain_backend: str | None = None
+    recheck_backend: str | None = None
+    snapshot_dir: str = "data/cvat-snapshots"
+    recheck_dir: str = "data/rechecks"
+    data_purpose: str = "development"
+    box_severity: dict = field(default_factory=dict)
+    evaluation_file: Path | None = None
+    pilot_arm_file: Path | None = None
+    accounts_file: Path | None = None
+    public_origin: str = ""
+    auth_cookie_secure: bool = True
+    guest_demo: bool = False
+    review_batch: str | None = None
+    review_order: str = "priority"
+    guideline_url: str = "http://127.0.0.1:8010"
+    pilot_images: int = field(default_factory=lambda: config.load("review_acceptance")["pilot_images"])
+
+    def __post_init__(self):
+        from src.api.audit import policy
+
+        policy(self.audit_top_frac, self.audit_rate, self.audit_seed)
+        if self.review_order not in {"priority", "file"}:
+            raise ValueError("review_order phải là priority hoặc file")
+        if self.guideline_url:
+            from urllib.parse import urlsplit
+
+            url = urlsplit(self.guideline_url)
+            if (url.scheme != "http" or url.hostname not in {"localhost", "127.0.0.1"}
+                    or url.username or url.password):
+                raise ValueError("guideline_url cần HTTP local, không chứa thông tin đăng nhập")
+        if self.pilot_images < 1:
+            raise ValueError("pilot_images phải dương")
+        if self.public_origin and not self.accounts_file:
+            raise ValueError("Shared deployment cần accounts_file, không chạy public API chưa bảo vệ")
+
+    @classmethod
+    def configured(cls) -> Settings:
+        values = config.load("review").copy()
+        for key in ("queue_file", "evidence_file", "evaluation_file", "pilot_arm_file", "accounts_file",
+                    "intake_config"):
+            value = os.environ.get(f"M13_{key.upper()}", values.get(key))
+            values[key] = config.ROOT / value if value else None
+        for key in ("images", "database", "reports", "mapping", "predictions"):
+            if value := os.environ.get(f"M13_{key.upper()}"):
+                values[key] = config.ROOT / value
+        if value := os.environ.get("M13_CVAT_URL"):
+            values["cvat_url"] = value
+        if value := os.environ.get("M13_PUBLIC_ORIGIN"):
+            values["public_origin"] = value
+        if value := os.environ.get("M13_DATABASE_URL"):
+            values["database_url"] = value
+        if value := os.environ.get("M13_AUTH_COOKIE_SECURE"):
+            if value not in {"true", "false"}:
+                raise ValueError("M13_AUTH_COOKIE_SECURE cần true/false")
+            values["auth_cookie_secure"] = value == "true"
+        for key in ("recheck_backend", "data_purpose", "snapshot_dir", "recheck_dir",
+                    "review_batch", "review_order", "guideline_url"):
+            if value := os.environ.get(f"M13_{key.upper()}"):
+                values[key] = value
+        return cls(**values)

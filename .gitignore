@@ -1,0 +1,13 @@
+data/
+models/
+.env*
+*.env
+*.db*
+*.sqlite*
+*.parquet
+*.zip
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

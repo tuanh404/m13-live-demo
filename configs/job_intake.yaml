@@ -1,0 +1,13 @@
+# Operator opts in with M13_INTAKE_CONFIG; never supplied by a browser request.
+# Empty allowlist means no task is authorized. Use dedicated test tasks first.
+allowed_task_ids: []
+root: data/cvat-jobs
+max_frames: 100
+max_image_bytes: 10485760
+timeout_seconds: 300
+profile: bbox-geometry-context-v1
+method: rule
+signals: [crowded, many_tiny, rare_class, edge_no_trunc, size_outlier,
+          dup_same_class, overlap_cross_class]
+# Uses the existing pipeline/weights configs, frozen into every published manifest.
+# Detector/spec/GBM are NOT implied by this explicit partial-check profile.

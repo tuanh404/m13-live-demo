@@ -1,0 +1,28 @@
+# Chính sách của luồng Tú Anh theo M13_DE_XUAT; không thay learning.yaml của nhóm.
+audit_top_frac: 0.2
+audit_rate: 0.05
+audit_seed: 42
+retrain_after: 50
+max_recall_drop: 0.005
+rank_buckets: [0.2, 0.5, 1.0]
+allowed_origins: []
+server_host: 127.0.0.1
+server_port: 8000
+# Người cài đặt chọn tại backend; giao diện review chỉ yêu cầu tên.
+review_batch: null # null = queue hiện tại; không đổi batch giữa một lượt đang làm
+review_order: priority # file chỉ dành cho môi trường thử nghiệm đã chuẩn bị riêng
+guideline_url: http://127.0.0.1:8010 # để rỗng nếu chưa cài giao diện guideline
+fixture_dir: data/samples/review
+queue_file: null
+queue_batches: # Optional local batches; their input files stay outside Git.
+  bdd01: data/bdd01-manual/ranked_queue_manual-unscored-v1.csv
+evidence_file: null
+retrain_backend: null # module:function; adapter nhận manifest split và metrics val từ backend ML
+recheck_backend: src.pipeline:recheck # chấm lại rule từ nhãn đã Save; queue phải có .manifest.json (sinh bằng `rank`)
+snapshot_dir: data/cvat-snapshots
+recheck_dir: data/rechecks
+data_purpose: development # Chỉ đặt real khi dùng dữ liệu thật đã xác minh; pilot kiểm trường này.
+box_severity: # error = đỏ (nghi vấn ưu tiên cao), review = vàng; người review xác nhận
+  error_signals: [guideline] # luật guideline đã duyệt: luôn đỏ
+  error_conf_signals: [model_missing_label, model_class_conflict] # đỏ khi conf model >= error_conf
+  error_conf: 0.85

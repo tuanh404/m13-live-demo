@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M13 · Review nhãn 2D</title><link rel="stylesheet" href="/assets/review.css">
+  <script type="module" src="/assets/review.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/">M13 <span>Review nhãn 2D</span></a>
+  <span id="data-kind" class="badge">Đang xác minh dữ liệu…</span><a href="/results">Kết quả baseline</a><a href="/pilot">Pilot</a><span id="connection">Đang kết nối…</span>
+</header>
+<div class="intro"><strong>Xem nghi vấn → chọn kết luận → ảnh tiếp theo</strong>
+  <span>Tool ưu tiên ảnh cần xem. Bạn là người xác nhận kết quả.</span></div>
+<p id="pilot-instructions" class="caption" hidden>Pilot người thật: không sửa nhãn/CVAT; giữ đúng lượt và chỉ ghi verdict. Đồng hồ đo phần xem web có focus. Hoàn thành30ảnh rồi gửi phản hồi.</p>
+<div id="notice" role="status" aria-live="polite">Đang tải batch demo…</div>
+<div class="retry-bar"><button id="retry" hidden>Thử lại</button>
+  <button id="discard-rejected" hidden>Bỏ lần gửi bị từ chối và tải queue mới</button></div>
+<main>
+  <aside class="queue-pane" aria-label="Hàng đợi ưu tiên">
+    <h1>Hàng đợi ưu tiên</h1><p id="progress">Đang tải…</p>
+    <progress id="progress-bar" value="0" max="1" aria-label="Tiến độ review"></progress>
+    <nav id="queue" aria-label="Chọn ảnh"></nav><button id="more" hidden>Tải thêm ảnh</button>
+  </aside>
+  <section class="workspace" aria-label="Ảnh và nhãn">
+    <div class="image-heading"><h2 id="image-title">Chọn một ảnh để bắt đầu</h2><span id="position"></span></div>
+    <div class="legend"><label><input id="show-labels" type="checkbox" checked> <i class="label-line"></i> Nhãn đang đối chiếu</label>
+      <label><input id="show-evidence" type="checkbox" checked> <i class="evidence-line"></i> Vùng nghi vấn</label>
+      <span>Nét đứt: vùng máy gợi ý để đối chiếu (nếu có)</span></div>
+    <div id="image-stage"><img id="photo" alt="" hidden><canvas id="overlay" aria-hidden="true"></canvas>
+      <p id="image-placeholder">Ảnh sẽ xuất hiện tại đây.</p></div>
+    <p class="caption" id="image-caption">Nhãn hiển thị thuộc lần kiểm tra này, chưa bao gồm thay đổi vừa sửa trong CVAT.</p>
+    <details id="boxes-details"><summary>Danh sách nhãn và tọa độ</summary><ul id="label-list"></ul></details>
+    <details id="cvat-tools"><summary>Sửa trong CVAT &amp; kiểm tra lại nhãn đã Save</summary>
+      <p>1. Mở CVAT và sửa → 2. Bấm Save trong CVAT → 3. Quay lại đây, đọc nhãn rồi kiểm tra lại.</p>
+      <p>Web không biết canvas đang có thay đổi chưa Save. Kết luận review không tự sửa nhãn.</p>
+      <button id="connect-cvat" disabled>Kiểm tra kết nối CVAT</button>
+      <a id="open-cvat" hidden target="_blank" rel="noopener">Mở CVAT để sửa ảnh này ↗</a>
+      <p id="cvat-status" role="status">CVAT là tùy chọn; xem ảnh và ghi verdict không cần CVAT.</p>
+      <button id="read-saved" disabled>Đã Save ở CVAT → đọc nhãn đã lưu</button>
+      <p id="saved-status"></p><ul id="saved-boxes"></ul>
+      <button id="recheck" disabled>Kiểm tra lại từ nhãn đã Save</button>
+      <button id="retry-recheck" hidden>Kiểm tra trạng thái / thử lại cùng yêu cầu</button>
+      <p id="recheck-status" role="status"></p>
+      <button id="show-history" disabled>Xem lịch sử trước / sau</button><div id="recheck-history"></div>
+    </details>
+    <details class="advanced"><summary>Lượt làm việc của bạn</summary>
+      <p id="warnings"></p>
+      <p>Thời gian chỉ tính khi bạn đang xem ảnh trên trang này. Không tính thời gian sửa bên CVAT. Sau khi mở CVAT, bấm đọc nhãn đã lưu để tiếp tục. Tải lại trang trước khi kết luận sẽ bắt đầu lại đồng hồ ảnh.</p>
+      <button id="new-session">Bắt đầu lượt demo mới</button>
+      <button id="logout" hidden>Đăng xuất</button>
+    </details>
+  </section>
+  <aside class="review-pane" aria-label="Kết luận review">
+    <div class="risk"><span>Điểm rủi ro</span><strong id="risk">—</strong><span>/ 100</span></div>
+    <p class="risk-help">Điểm cao → ưu tiên xem trước. Đây không phải xác suất sai; điểm 0 vẫn có thể có lỗi.</p>
+    <h2>Cần xem gì?</h2><ul id="reasons"><li>Chọn ảnh trong hàng đợi.</li></ul>
+    <details id="evidence-details"><summary>Các vùng nghi vấn · bấm để đối chiếu</summary>
+      <ul id="evidence-list" class="evidence-list"></ul></details>
+    <fieldset id="verdicts" disabled><legend>Kết luận của bạn · lưu và sang ảnh tiếp</legend>
+      <button data-verdict="error"><kbd>1</kbd><span><strong>Lỗi thật</strong><small>Đã đối chiếu, có lỗi nhãn cần sửa.</small></span></button>
+      <button data-verdict="false_alarm"><kbd>2</kbd><span><strong>Bot nhầm</strong><small>Không xác nhận nghi vấn.</small></span></button>
+      <button data-verdict="skip"><kbd>3</kbd><span><strong>Bỏ qua</strong><small>Chưa đủ thông tin để kết luận.</small></span></button>
+    </fieldset>
+    <details id="note-details"><summary>Thêm ghi chú (không bắt buộc)</summary>
+      <label class="note-label" for="note">Ghi chú cho kết luận sắp lưu</label>
+      <textarea id="note" rows="2" maxlength="10000" placeholder="Ví dụ: box chạm mép nhưng thiếu truncated"></textarea>
+    </details>
+    <p class="caution">Máy có thể cảnh báo nhầm hoặc bỏ sót lỗi. Kết luận của bạn chỉ ghi nhận kết quả, không tự sửa hoặc lưu nhãn CVAT.</p>
+    <section class="stats" aria-label="Thống kê lượt hiện tại"><h2>Lượt review của bạn</h2>
+      <p id="stats">Chưa có kết quả.</p><small>Chỉ tính lượt này trên bộ ảnh đang đối chiếu. Bỏ qua không tính vào tỷ lệ lỗi.</small></section>
+    <form id="pilot-feedback" hidden><h2>Phản hồi sau lượt pilot</h2>
+      <label>Độ rõ của hướng dẫn (1–5)<select id="feedback-clarity"><option value="">Chọn mức</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Chỗ khó hiểu / góp ý<textarea id="feedback-text" maxlength="2000"></textarea></label>
+      <button id="feedback-send" type="submit">Gửi phản hồi</button><p id="feedback-status" role="status"></p></form>
+  </aside>
+</main>
+<footer id="data-attribution" class="caption data-attribution" hidden>Ảnh/nhãn: BDD100K · ©2018 The Regents of the University of California.
+  Demo giáo dục/nghiên cứu, không dùng kết quả lượt thử làm số liệu pilot.
+  <a href="/data-license">Giấy phép dữ liệu</a></footer>
+</body>
+</html>

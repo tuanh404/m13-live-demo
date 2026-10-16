@@ -1,0 +1,10 @@
+{
+	admin off
+}
+{$M13_SITE} {
+	encode zstd gzip
+	request_body {
+		max_size 32KB
+	}
+	reverse_proxy {$M13_UPSTREAM:api:8000}
+}

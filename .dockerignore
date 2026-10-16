@@ -1,0 +1,15 @@
+**
+!pyproject.toml
+!src/
+!src/**
+!configs/
+!configs/**
+configs/guidelines/drafts/
+!deployment/
+!deployment/mvp/
+!deployment/mvp/requirements.lock
+!deployment/render/
+!deployment/render/BDD100K-LICENSE.txt
+**/__pycache__/
+**/*.pyc
+**/.env*

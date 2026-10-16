@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M13 QC 2D</title><link rel="stylesheet" href="sidepanel.css"></head>
+<body>
+<header><div><h1>Auto QC <span>2D</span></h1><small id="reviewer-name">Đối chiếu nghi vấn · xác nhận kết quả</small></div><button id="identity-toggle" title="Đổi người review">Đổi người</button></header>
+<main>
+<section id="identity" hidden><form id="identity-form">
+<label>Tên của bạn <input id="reviewer" required maxlength="100" autocomplete="name" placeholder="Ví dụ: Tú Anh"></label>
+<p class="hint">Bộ ảnh đã được chuẩn bị sẵn. Kết quả sẽ được lưu theo tên của bạn.</p>
+<button type="submit" class="primary">Bắt đầu</button></form></section>
+<div class="session-heading"><span id="count"></span><button id="refresh" title="Tải lại hàng đợi">↻ Tải lại</button></div>
+<p id="job-context" class="muted"></p>
+<button id="check-job" class="primary" hidden>Kiểm tra job này</button>
+<p id="job-check-status" role="status" class="muted" hidden></p>
+<p id="status" role="status" aria-live="polite">Đang kết nối…</p>
+<p id="error" role="alert" hidden></p>
+<p id="data-kind" class="badge" hidden></p>
+<section id="selected" hidden>
+<h2 id="image-title"></h2>
+<button id="run-qc" class="primary main-action">▶ Kiểm tra nhãn đã lưu</button>
+<p class="hint">Bấm Save trong CVAT trước khi kiểm tra.</p>
+<section id="result"><div class="result-heading"><h3>Điểm rủi ro</h3><strong id="risk-score"></strong></div><p class="hint">Điểm cao: ưu tiên xem trước. Điểm 0 vẫn có thể có lỗi.</p><p id="result-summary"></p><ul id="reasons"></ul><details id="evidence-details"><summary>Vị trí cần đối chiếu <span id="evidence-count"></span></summary><ul id="evidence"></ul></details></section>
+<p id="saved-status" role="status">Chưa đọc lại nhãn đã Save.</p>
+<details id="annotation-details"><summary>Tọa độ và chi tiết</summary>
+<ul id="saved-labels"></ul><button id="read-saved">Xem nhãn đã lưu</button><button id="recheck" disabled>Kiểm tra nhãn vừa đọc</button>
+<label class="note">Ghi chú (không bắt buộc)<textarea id="note" rows="2" maxlength="10000"></textarea></label>
+<details id="image-preview"><summary>Ảnh xem trước</summary><div id="preview"><img id="image" alt="Ảnh đang review"><canvas id="boxes"></canvas></div><p id="image-error" hidden></p></details>
+</details>
+<nav><button id="previous">← Ảnh trước</button><button id="next">Ảnh tiếp →</button></nav>
+</section>
+<details id="queue-section" open><summary>Hàng đợi ưu tiên</summary><ul id="queue"></ul><button id="more" hidden>Xem thêm</button></details>
+<details><summary>Thống kê phiên</summary><p id="stats">Chưa có dữ liệu</p><button id="new-review">Bắt đầu lượt mới</button></details>
+<details><summary>Hướng dẫn gán nhãn</summary><p class="hint">Xem quy định của bộ ảnh. Thay đổi quy định cần người phụ trách đối chiếu và duyệt trước khi áp dụng.</p><button id="open-guideline">Mở hướng dẫn gán nhãn</button></details>
+</main>
+<footer id="review-footer" hidden><p class="footer-label">Kết luận cho ảnh này · không tự sửa hoặc lưu nhãn CVAT</p>
+<div id="actions"><button data-verdict="error" title="Đã đối chiếu và xác nhận có lỗi nhãn"><kbd>1</kbd> Có lỗi</button><button data-verdict="false_alarm" title="Cảnh báo không đúng sau khi đối chiếu"><kbd>2</kbd> Báo nhầm</button><button data-verdict="skip" title="Chưa đủ thông tin để kết luận"><kbd>3</kbd> Chưa rõ</button></div>
+<button id="retry" hidden>Thử lưu lại kết luận</button><p id="timer">Chưa bắt đầu</p></footer>
+<script src="sidepanel.js"></script>
+</body></html>

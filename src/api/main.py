@@ -1,0 +1,263 @@
+"""Local review API. Start: uvicorn src.api.main:app --host 127.0.0.1."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from typing import Annotated, Literal
+from uuid import uuid4
+
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from src.api.auth import install_auth
+from src.api.models import ModelManager
+from src.api.pilot import session_key, validate_verdict
+from src.api.pilot_web import install_pilot
+from src.api.recheck import RecheckManager
+from src.api.results import install_results
+from src.api.saved_labels import SavedLabels
+from src.api.schemas import ImageDetail, QueueResponse, SavedVerdict
+from src.api.service import QueueService
+from src.api.settings import Settings
+from src.api.store import DuplicateSubmission, ReviewStore
+from src.api.web_ui import install_web
+from src.api.workspace import install_workspace
+
+ReviewOrder = Literal["priority", "file"]
+
+
+class Verdict(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
+    request_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1, max_length=100)
+    image_id: str = Field(min_length=1, max_length=200)
+    verdict: Literal["error", "false_alarm", "skip"]
+    reviewer: str = Field(min_length=1, max_length=100)
+    seconds_spent: float = Field(ge=0, le=86400)
+    note: str | None = Field(default=None, max_length=10000)
+    obj_ids: list[str] = Field(default_factory=list, max_length=1000)
+    batch_id: str | None = Field(default=None, max_length=100)
+    queue_id: str | None = Field(default=None, max_length=64)
+    model_version: str | None = Field(default=None, max_length=200)
+    rank: int | None = Field(default=None, ge=1)
+    session_id: str = Field(default="default", min_length=1, max_length=100)
+    review_order: ReviewOrder = "priority"
+
+    @field_validator("obj_ids")
+    @classmethod
+    def object_ids(cls, values):
+        if any(not value or len(value) > 200 for value in values):
+            raise ValueError("obj_ids phải là ID không rỗng, tối đa 200 ký tự")
+        return list(dict.fromkeys(values))
+
+
+class Rollback(BaseModel):
+    model_version: str = Field(min_length=1, max_length=200)
+
+
+class RecheckRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    request_id: str = Field(pattern=r"^[A-Za-z0-9-]{1,100}$")
+    snapshot_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    queue_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+def create_app(
+    settings: Settings | None = None, *, retrain_backend=None, recheck_backend=None, cvat_client=None
+) -> FastAPI:
+    settings = settings or Settings.configured()
+    store = ReviewStore(settings.database, settings.database_url)
+    service = QueueService(settings, store)
+    models = ModelManager(settings, store, service, retrain_backend)
+    saved = SavedLabels(settings, service, cvat_client)
+    rechecks = RecheckManager(settings, store, service, saved, recheck_backend)
+    app = FastAPI(title="M13 Review Queue", version="0.2.0")
+    app.state.settings, app.state.store, app.state.service = settings, store, service
+    app.state.models = models
+    app.state.rechecks = rechecks
+    install_workspace(app, settings, store)
+    origins = [settings.public_origin] if settings.accounts_file else list(
+        dict.fromkeys([settings.cvat_url.rstrip("/"), *settings.allowed_origins])
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
+        allow_credentials=False,
+    )
+
+    @app.get("/health")
+    def health(batch: str | None = None):
+        try:
+            frame, queue_id, path = service.snapshot(batch)
+            checks = []
+            if path:
+                try:
+                    manifest = json.loads(path.with_suffix(".manifest.json").read_text())
+                    if (
+                        isinstance(manifest, dict)
+                        and manifest.get("queue_sha256") == hashlib.sha256(path.read_bytes()).hexdigest()
+                    ):
+                        names = manifest.get("used_signals", [])
+                        if isinstance(names, list) and all(isinstance(n, str) for n in names):
+                            checks = names
+                except (OSError, ValueError, TypeError):
+                    pass  # No verified metadata; the UI must not invent active checks.
+            return {
+                "status": "ok",
+                "queue_id": queue_id,
+                "model_version": str(frame.model_version.iloc[0]) if len(frame) else None,
+                "queue_available": len(frame) > 0,
+                "data_purpose": settings.data_purpose,
+                "active_checks": checks,
+            }
+        except HTTPException as exc:
+            raise HTTPException(503, {"status": "degraded", "queue_error": exc.detail}) from exc
+
+    @app.get("/queue", response_model=QueueResponse)
+    def queue(
+        limit: Annotated[int, Query(ge=1, le=500)] = 50,
+        offset: Annotated[int, Query(ge=0)] = 0,
+        batch: str | None = None,
+        reviewer: str | None = None,
+        session_id: str | None = None,
+        include_reviewed: bool = False,
+        order: ReviewOrder = "priority",
+        cvat_task_id: Annotated[int | None, Query(ge=1)] = None,
+        cvat_job_id: Annotated[int | None, Query(ge=1)] = None,
+        cvat_origin: str | None = None,
+    ):
+        return service.queue(
+            batch=batch,
+            limit=limit,
+            offset=offset,
+            reviewer=reviewer,
+            session_id=session_id,
+            include_reviewed=include_reviewed,
+            order=order,
+            cvat_task_id=cvat_task_id, cvat_job_id=cvat_job_id, cvat_origin=cvat_origin,
+        )
+
+    @app.get("/image/{image_id}/file")
+    def image_file(image_id: str):
+        path = service.image_path(image_id)
+        if path is None:
+            raise HTTPException(404, "Chưa có nội dung ảnh trong images_dir")
+        return FileResponse(path, headers={"Cache-Control": "no-cache"})
+
+    @app.get("/image/{image_id}", response_model=ImageDetail)
+    def image(image_id: str, batch: str | None = None, queue_id: str | None = None):
+        return service.detail(image_id, batch, queue_id)
+
+    @app.get("/image/{image_id}/saved")
+    def saved_image(image_id: str, batch: str | None = None, queue_id: str | None = None):
+        return rechecks.capture(image_id, batch, queue_id)
+
+    @app.post("/image/{image_id}/recheck")
+    def recheck_image(image_id: str, value: RecheckRequest):
+        return rechecks.run(image_id, value.model_dump())
+
+    @app.get("/rechecks/{request_id}")
+    def recheck_status(request_id: str):
+        return rechecks.status(request_id)
+
+    @app.post("/verdict", response_model=SavedVerdict)
+    def verdict(value: Verdict, request: Request):
+        identity = getattr(request.state, "auth_identity", None)
+        if identity and not settings.pilot_arm_file and (
+            value.reviewer != identity["reviewer"] or value.session_id != identity["session_id"]
+        ):
+            raise HTTPException(403, "Verdict phải thuộc phiên đăng nhập")
+        if settings.pilot_arm_file:
+            manifest = getattr(request.state, "pilot_manifest", None)
+            if manifest is None or any(
+                getattr(value, key) != manifest["plan"][field]
+                for key, field in [
+                    ("reviewer", "reviewer"),
+                    ("session_id", "session_id"),
+                    ("review_order", "order"),
+                ]
+            ):
+                raise HTTPException(403, "Verdict phải thuộc phiên pilot đang đăng ký")
+        payload = value.model_dump()
+        previous = store.submission(value.request_id)
+        if previous:
+            for key in ("queue_id", "model_version", "rank"):
+                if payload[key] is None:
+                    payload[key] = previous[key]
+            audit = previous["is_audit"]
+        else:
+            detail, is_audit = service.verdict_context(value.image_id, value.batch_id, value.queue_id)
+            for key in ("queue_id", "model_version", "rank"):
+                if payload[key] is not None and payload[key] != detail[key]:
+                    raise HTTPException(409, f"{key} không khớp hàng đợi đang phục vụ")
+                payload[key] = detail[key]
+            audit = value.review_order == "priority" and is_audit
+            validate_verdict(store, settings, payload, reader=app.state.rechecks.saved)
+        try:
+            saved, duplicate = store.append(
+                payload,
+                is_audit=audit,
+                audit_context=service.audit_metadata(value.image_id, value.batch_id, payload["queue_id"])
+                if not previous
+                else None,
+            )
+        except DuplicateSubmission as exc:
+            raise HTTPException(409, str(exc)) from exc
+        result = {key: saved[key] for key in ("id", "request_id", "image_id", "created_at")}
+        if not duplicate and not settings.accounts_file and not store.state(
+            session_key(value.reviewer, value.session_id)
+        ):
+            models.maybe_retrain()
+        return {"status": "saved", "duplicate": duplicate, **result}
+
+    @app.get("/stats")
+    def stats(
+        batch: str | None = None,
+        reviewer: str | None = None,
+        session_id: str | None = None,
+        order: ReviewOrder | None = None,
+        queue_id: str | None = None,
+        cvat_task_id: Annotated[int | None, Query(ge=1)] = None,
+        cvat_job_id: Annotated[int | None, Query(ge=1)] = None,
+        cvat_origin: str | None = None,
+    ):
+        result = service.stats(
+            batch=batch, reviewer=reviewer, session_id=session_id, order=order, queue_id=queue_id,
+            cvat_task_id=cvat_task_id, cvat_job_id=cvat_job_id, cvat_origin=cvat_origin,
+        )
+        # Even a running audit count reveals a sample after a single submission.
+        # Keep analysis in local exports, not the reviewer's browser response.
+        result.pop("audit_events", None)
+        return result
+
+    @app.get("/model")
+    def model():
+        return models.info()
+
+    @app.post("/retrain")
+    def retrain():
+        if store.state_items("pilot:"):
+            raise HTTPException(409, "DB pilot giữ nguyên model/queue; training dùng DB riêng")
+        return models.retrain()
+
+    @app.post("/model/rollback")
+    def rollback(value: Rollback):
+        if store.state_items("pilot:"):
+            raise HTTPException(409, "Không đổi model/queue trong DB pilot")
+        return models.rollback(value.model_version)
+
+    install_web(app, service)
+    install_results(app, settings)
+    install_pilot(app, settings, store, service, saved)
+    from src.api.job_registry import install_intake
+
+    install_intake(app, settings, cvat_client)
+    install_auth(app, settings, store, service)
+    return app
+
+
+app = create_app()

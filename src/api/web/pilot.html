@@ -1,0 +1,15 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M13 · Pilot người thật</title><link rel="stylesheet" href="/assets/review.css"><script type="module" src="/assets/pilot.js"></script></head>
+<body><header class="topbar"><a class="brand" href="/">M13 · Review</a><a href="/results">Baseline</a></header>
+<section class="report-page"><h1>Pilot 30 ảnh · chỉ dành cho người review thật</h1>
+<p id="pilot-status" role="status">Đang kiểm cấu hình…</p>
+<p>Hai người khác nhau xem cùng 30 ảnh, cùng nhãn ban đầu, trên task và DB riêng. Một người theo hàng đợi ưu tiên, một người theo tên file. Không mở trước ảnh của batch này, không làm cả hai lượt.</p>
+<ol><li>Đọc hướng dẫn và xác nhận bạn chưa xem batch.</li><li>Xem ảnh, đối chiếu nghi vấn; chọn Lỗi thật / Bot nhầm / Bỏ qua hoặc phím1/2/3. Ghi chú tùy chọn.</li><li>Không sửa nhãn, không mở CVAT trong pilot. Đồng hồ chỉ đo khi ảnh đã tải và tab web có focus.</li><li>Hoàn thành 30ảnh rồi gửi phản hồi. Có thể reload/retry; lịch sử vẫn giữ, không tự bắt đầu phiên mới.</li></ol>
+<form id="pilot-register"><label>Tên reviewer <input id="pilot-name" required maxlength="100" autocomplete="off"></label>
+<p><label><input id="human" type="checkbox" required> Tôi là người trực tiếp review, không chạy tự động.</label></p>
+<p><label><input id="unseen" type="checkbox" required> Tôi chưa xem 30ảnh/nhãn của batch này và không làm lượt còn lại.</label></p>
+<p><label><input id="protocol" type="checkbox" required> Tôi hiểu quy trình, chỉ ghi verdict và không sửa nhãn trong pilot.</label></p>
+<button id="pilot-submit" disabled>Đăng ký và bắt đầu lượt review</button></form>
+<a id="pilot-resume" href="/pilot/review" hidden>Tiếp tục phiên đã đăng ký</a>
+<p>Kết quả mẫu nhỏ chịu ảnh hưởng tốc độ từng người và cách hiểu lỗi. Không suy ra phần trăm tiết kiệm thời gian từ việc chỉ xem20%ảnh. Fixture không được đăng ký thành pilot thật.</p>
+</section></body></html>

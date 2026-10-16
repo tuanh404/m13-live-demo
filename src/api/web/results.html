@@ -1,0 +1,14 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M13 · Kết quả baseline</title><link rel="stylesheet" href="/assets/review.css"><script type="module" src="/assets/results.js"></script>
+</head><body><header class="topbar"><a class="brand" href="/">M13 · Review</a><strong>Kết quả baseline</strong><a href="/pilot">Pilot người thật</a></header>
+<section class="report-page"><h1>Ưu tiên review tìm được bao nhiêu lỗi tiêm?</h1>
+<p id="report-dataset">Đánh giá offline trên lỗi được tiêm có đáp án, không phải lỗi được QC xác nhận.</p>
+<p>Bảng này thuộc phiên bản artifacts ghi bên dưới. Demo có thể phục vụ baseline mới;
+không coi số liệu của hai phiên bản là cùng một phép đánh giá.</p>
+<p id="report-status" role="status">Đang tải báo cáo…</p><button id="report-retry" hidden>Thử lại</button>
+<div id="report" hidden><p id="report-meta"></p><div class="table-scroll"><table><thead><tr><th>Thứ tự</th><th>Recall ảnh @20%</th><th>Recall lỗi có trọng số @20%</th><th>Proxy giảm số ảnh</th></tr></thead><tbody id="report-rows"></tbody></table></div>
+<p>Proxy giảm số ảnh: so số ảnh cần xem để đạt 80% recall lỗi có trọng số với random nhiều seed. Không phải thời gian đo thật; không suy ra tiết kiệm 80% thời gian từ ngân sách 20% ảnh.</p>
+<p><strong>Thời gian tiết kiệm đo thật: chưa đo.</strong> Pilot người thật: chưa có kết quả.</p>
+<img id="gain" src="/web/results/gain.png" alt="Gain curve trên lỗi tiêm, cùng split và đáp án">
+<h2>Theo loại lỗi tiêm</h2><ul id="per-type"></ul>
+<details><summary>Nguồn, hash và giới hạn</summary><pre id="report-source"></pre></details></div></section></body></html>

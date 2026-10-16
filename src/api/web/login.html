@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đăng nhập · M13</title><link rel="stylesheet" href="/assets/review.css">
+<script type="module" src="/assets/login.js"></script></head><body>
+<header class="topbar"><strong>M13 · Review</strong><span>Demo có kiểm soát truy cập</span></header>
+<main class="report-page"><section><h1>Đăng nhập để thử review</h1>
+<div id="guest-intro" hidden><p>Trải nghiệm trên 10 ảnh BDD. Mỗi lượt riêng, không cần cài extension hoặc CVAT.</p>
+<button id="guest-demo" type="button">Trải nghiệm demo →</button><p>Đây là lượt thử sản phẩm, không phải số liệu pilot người thật.</p></div>
+<p>Dùng tài khoản được operator cấp. Mỗi lần đăng nhập có lượt review riêng; đây không phải pilot người thật.</p>
+<form id="login-form"><p><label>Tên đăng nhập <input id="username" autocomplete="username" required maxlength="100"></label></p>
+<p><label>Mật khẩu <input id="password" type="password" autocomplete="current-password" required maxlength="256"></label></p>
+<button id="sign-in" type="submit">Đăng nhập</button><p id="login-status" role="status"></p></form>
+</section></main></body></html>
