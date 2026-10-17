@@ -172,7 +172,7 @@ def sample_zip():
 class Uploads:
     def __init__(self, settings, store):
         self.settings, self.store = settings, store
-        self.cfg = config.load("upload")
+        self.cfg = copy.deepcopy(config.load("upload"))
         self.root = Path(tempfile.mkdtemp(prefix="m13-uploads-"))
         self.lock = threading.Lock()
         self.upload_gate = threading.Lock()
