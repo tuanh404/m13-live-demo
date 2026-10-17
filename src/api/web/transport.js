@@ -1,5 +1,5 @@
 // Web transport only. Queue ordering, validation, deduplication and statistics stay in the API.
-export const scopePrefix = location.pathname.match(/^\/jobs\/[a-f0-9]{32}(?=\/)/)?.[0] || '';
+export const scopePrefix = location.pathname.match(/^\/(jobs|batches)\/[a-f0-9]{32}(?=\/)/)?.[0] || '';
 export function apiPath(path) {
   return scopePrefix && !/^\/(auth|intake)(\/|\?|$)/.test(path) && !path.startsWith(scopePrefix+'/')
     ? scopePrefix + path : path;

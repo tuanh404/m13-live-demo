@@ -1,0 +1,9 @@
+# Small, authenticated web batches. No detector/spec is implied by this profile.
+max_images: 10
+max_zip_bytes: 5242880
+max_unpacked_bytes: 20971520
+max_entries: 40
+max_boxes_per_image: 500
+max_batches_per_session: 5
+max_stored_bytes: 104857600
+signals: [dup_same_class, overlap_cross_class, size_outlier, crowded, many_tiny, rare_class]

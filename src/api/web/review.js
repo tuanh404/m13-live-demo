@@ -217,7 +217,7 @@ async function load(message = '') {
     state.context = context; state.queue = queue;
     $('more').disabled = false;
     $('connection').textContent = 'Sẵn sàng';
-    $('data-kind').textContent = context.fixture ? 'FIXTURE · Ảnh tổng hợp, không phải BDD thật' :
+    $('data-kind').textContent = scopePrefix.startsWith('/batches/') ? 'Ảnh của bạn · Kiểm một phần' : context.fixture ? 'FIXTURE · Ảnh tổng hợp, không phải BDD thật' :
       context.data_purpose === 'development' ? 'Dữ liệu phát triển · kiểm các tín hiệu được cấu hình' : 'Ảnh BDD100K · lượt trải nghiệm';
     $('data-attribution').hidden=context.fixture||context.data_purpose!=='real';
     renderStats(stats); renderQueue();
@@ -315,7 +315,14 @@ async function boot() {
       document.querySelector('.brand').href=location.pathname;
       for(const link of document.querySelectorAll('a[href="/results"],a[href="/pilot"]'))link.hidden=true;
     }
-    const auth=await request('/auth/session');
+    const auth=await request('/auth/session'+(scopePrefix.startsWith('/batches/')?'?upload_batch='+scopePrefix.split('/')[2]:''));
+    if(auth.uploads_enabled){
+      const link=document.createElement('a');link.href='/my-batches';link.textContent='Bộ ảnh của tôi';
+      if(!document.querySelector('a[data-upload-nav]')){link.dataset.uploadNav='true';document.querySelector('.topbar').append(link);}
+    }
+    if(scopePrefix.startsWith('/batches/')){
+      $('upload-review-scope').hidden=false;$('new-session').hidden=true;
+    }
     state.canCvat=!auth.enabled||auth.identity?.role==='admin';
     if(auth.enabled){
       if(!auth.authenticated){location.replace('/login');return;}

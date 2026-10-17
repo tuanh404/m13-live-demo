@@ -65,6 +65,7 @@ def create_render_app():
         data_purpose=descriptor.get("data_purpose", "development"),
         accounts_file=accounts,
         guest_demo=True,
+        uploads_enabled=True,
         public_origin=origin.rstrip("/"),
         auth_cookie_secure=True,
         snapshot_dir=str(root / "disabled-snapshots"),

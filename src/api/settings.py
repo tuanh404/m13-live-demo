@@ -44,6 +44,8 @@ class Settings:
     public_origin: str = ""
     auth_cookie_secure: bool = True
     guest_demo: bool = False
+    uploads_enabled: bool = False
+    store_namespace: str = ""
     review_batch: str | None = None
     review_order: str = "priority"
     guideline_url: str = "http://127.0.0.1:8010"

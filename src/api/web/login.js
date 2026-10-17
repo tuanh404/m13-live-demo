@@ -1,5 +1,6 @@
 const $=id=>document.getElementById(id);
 const form=$('login-form'),button=$('sign-in'),guest=$('guest-demo'),status=$('login-status');
+let authenticated=false;
 function message(value,error=false){status.textContent=value;status.dataset.tone=error?'error':'';}
 async function responseJSON(response){
   const body=await response.json();
@@ -10,6 +11,8 @@ async function connect(){
   $('entry-retry').hidden=true;message('Đang kết nối…');
   try{
     const session=await responseJSON(await fetch('/auth/session'));
+    authenticated=!!session.authenticated;
+    $('upload-entry').hidden=!session.uploads_enabled||(!authenticated&&!session.guest_demo);
     if(!session.enabled){location.replace('/');return;}
     const guestMode=!!session.guest_demo;
     $('guest-intro').hidden=!guestMode;form.hidden=guestMode;
@@ -31,10 +34,17 @@ $('account-toggle').onclick=()=>{
 guest.onclick=async()=>{
   guest.disabled=true;message('Đang mở lượt demo…');
   try{
-    await responseJSON(await fetch('/auth/demo',{method:'POST'}));location.replace('/');
+    if(!authenticated)await responseJSON(await fetch('/auth/demo',{method:'POST'}));location.replace('/');
   }catch{
     message('Chưa mở được lượt demo. Bấm Trải nghiệm demo để thử lại.',true);guest.disabled=false;
   }
+};
+$('my-images').onclick=async()=>{
+  $('my-images').disabled=true;message('Đang mở bộ ảnh của bạn…');
+  try{
+    if(!authenticated)await responseJSON(await fetch('/auth/demo',{method:'POST'}));
+    location.assign('/my-batches');
+  }catch{message('Chưa mở được phiên. Hãy thử lại.',true);$('my-images').disabled=false;}
 };
 form.addEventListener('submit',async event=>{
   event.preventDefault();button.disabled=true;guest.disabled=true;message('Đang đăng nhập…');

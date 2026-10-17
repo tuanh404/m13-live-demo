@@ -45,24 +45,29 @@ class Login(BaseModel):
 
 def install_auth(app, settings, store, service):
     if not settings.accounts_file:
+
         @app.get("/auth/session")
         def local_session():
             return {"enabled": False}
+
         return
     cfg = config.load("deployment")
     origin = settings.public_origin.rstrip("/")
     url = urlsplit(origin)
     if url.scheme not in {"http", "https"} or not url.netloc or url.path or url.query or url.fragment:
         raise ValueError("Cần M13_PUBLIC_ORIGIN là origin đầy đủ, không prefix")
-    if url.username or url.password or (
-        url.scheme != "https" and url.hostname not in {"localhost", "127.0.0.1", "[::1]", "::1"}
-    ) or (url.scheme == "https" and not settings.auth_cookie_secure):
+    if (
+        url.username
+        or url.password
+        or (url.scheme != "https" and url.hostname not in {"localhost", "127.0.0.1", "[::1]", "::1"})
+        or (url.scheme == "https" and not settings.auth_cookie_secure)
+    ):
         raise ValueError("Shared deployment cần HTTPS và cookie Secure; HTTP chỉ cho loopback test")
     accounts = json.loads(settings.accounts_file.read_text())["users"]
     if not accounts or any(
-        user.get("role") not in {"demo", "admin"} or not user.get("password_hash", "").startswith(
-            "pbkdf2_sha256$600000$"
-        ) for user in accounts.values()
+        user.get("role") not in {"demo", "admin"}
+        or not user.get("password_hash", "").startswith("pbkdf2_sha256$600000$")
+        for user in accounts.values()
     ):
         raise ValueError("Account file cần role và password hash PBKDF2 hợp lệ")
     dummy = password_hash(secrets.token_urlsafe(32))
@@ -78,6 +83,17 @@ def install_auth(app, settings, store, service):
         account_hash = hashlib.sha256(accounts[state["username"]]["password_hash"].encode()).hexdigest()
         return state if state.get("account_hash") == account_hash else None
 
+    def batch_identity(session, key):
+        import re
+
+        if not session or not re.fullmatch("[a-f0-9]{32}", key):
+            raise HTTPException(404, "Không tìm thấy bộ ảnh trong phiên của bạn.")
+        record = store.state("upload-batch:" + key)
+        owner = hashlib.sha256(session["reviewer"].encode()).hexdigest()
+        if not record or record["owner"] != owner:
+            raise HTTPException(404, "Không tìm thấy bộ ảnh trong phiên của bạn.")
+        return {**session, "session_id": record["review_session"]}
+
     @app.middleware("http")
     async def protect(request: Request, call_next):
         # Trust only the configured origin, never the forwarded Host supplied by a visitor.
@@ -86,8 +102,12 @@ def install_auth(app, settings, store, service):
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
             if request.headers.get("origin") != origin:
                 return JSONResponse({"detail": "Origin không hợp lệ"}, status_code=403)
+            upload = settings.uploads_enabled and request.url.path == "/my-batches/upload"
+            if upload and not identity(request):
+                return JSONResponse({"detail": "Cần đăng nhập"}, status_code=401)
+            limit = config.load("upload")["max_zip_bytes"] if upload else cfg["max_body_bytes"]
             try:
-                if int(request.headers.get("content-length", "0")) > cfg["max_body_bytes"]:
+                if int(request.headers.get("content-length", "0")) > limit:
                     return JSONResponse({"detail": "Request quá lớn"}, status_code=413)
             except ValueError:
                 return JSONResponse({"detail": "Content-Length không hợp lệ"}, status_code=400)
@@ -95,15 +115,26 @@ def install_auth(app, settings, store, service):
             chunks, size = [], 0
             async for chunk in request.stream():
                 size += len(chunk)
-                if size > cfg["max_body_bytes"]:
+                if size > limit:
                     return JSONResponse({"detail": "Request quá lớn"}, status_code=413)
                 chunks.append(chunk)
             request._body = b"".join(chunks)
         path = request.url.path
         session = identity(request)
+        import re
+
+        batch = re.match(r"^/batches/([a-f0-9]{32})(?:/|$)", path)
+        if session and batch:
+            try:
+                session = batch_identity(session, batch[1])
+            except HTTPException as exc:
+                return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
         request.state.auth_identity = session
-        public = (path in {"/login", "/auth/login", "/auth/session", "/health"}
-                  or path.startswith("/assets/") or (settings.guest_demo and path == "/auth/demo"))
+        public = (
+            path in {"/login", "/auth/login", "/auth/session", "/health"}
+            or path.startswith("/assets/")
+            or (settings.guest_demo and path == "/auth/demo")
+        )
         if request.method in {"GET", "HEAD"} and (
             path in {"/submission", "/web/submission"} or path.startswith("/submission/assets/")
         ):
@@ -114,17 +145,25 @@ def install_auth(app, settings, store, service):
             return JSONResponse({"detail": "Cần đăng nhập"}, status_code=401)
         if session:
             if session["role"] == "demo":
-                admin = path.startswith(("/intake", "/jobs/", "/retrain", "/model", "/rechecks", "/web/cvat",
-                                         "/web/recheck-history", "/pilot")) or (
-                    path.startswith("/image/") and path.endswith(("/saved", "/recheck"))
-                )
+                admin = path.startswith(
+                    (
+                        "/intake",
+                        "/jobs/",
+                        "/retrain",
+                        "/model",
+                        "/rechecks",
+                        "/web/cvat",
+                        "/web/recheck-history",
+                        "/pilot",
+                    )
+                ) or (path.startswith("/image/") and path.endswith(("/saved", "/recheck")))
                 if admin:
                     return JSONResponse(
                         {"detail": "Chức năng dành cho operator; demo chỉ review"}, status_code=403
                     )
             import re
 
-            scoped_path = re.sub(r"^/jobs/[a-f0-9]{32}", "", path)
+            scoped_path = re.sub(r"^/(jobs|batches)/[a-f0-9]{32}", "", path)
             if scoped_path in {"/queue", "/stats"} and not settings.pilot_arm_file:
                 if any(request.query_params.get(k) != session[k] for k in ("reviewer", "session_id")):
                     return JSONResponse(
@@ -148,12 +187,20 @@ def install_auth(app, settings, store, service):
         return FileResponse(assets / "login.html")
 
     @app.get("/auth/session")
-    def current(request: Request):
+    def current(request: Request, upload_batch: str | None = None):
         session = identity(request)
+        if upload_batch is not None:
+            session = batch_identity(session, upload_batch)
         guest_ready = settings.guest_demo and accounts.get("guest", {}).get("role") == "demo"
-        return {"enabled": True, "authenticated": bool(session), "guest_demo": guest_ready,
-                "identity": {k: session[k] for k in ("username", "role", "reviewer", "session_id")}
-                if session else None}
+        return {
+            "enabled": True,
+            "authenticated": bool(session),
+            "guest_demo": guest_ready,
+            "uploads_enabled": settings.uploads_enabled,
+            "identity": {k: session[k] for k in ("username", "role", "reviewer", "session_id")}
+            if session
+            else None,
+        }
 
     def rate_limit(request):
         # Fixed-window limit shared across workers; do not trust forwarded IPs.
@@ -177,14 +224,25 @@ def install_auth(app, settings, store, service):
 
     def sign_in(username, user, now):
         token = secrets.token_urlsafe(32)
-        session = {"username": username, "role": user["role"],
-                   "reviewer": "live-" + secrets.token_hex(8), "session_id": "live-" + secrets.token_hex(16),
-                   "account_hash": hashlib.sha256(user["password_hash"].encode()).hexdigest(),
-                   "expires": now + cfg["session_seconds"]}
+        session = {
+            "username": username,
+            "role": user["role"],
+            "reviewer": "live-" + secrets.token_hex(8),
+            "session_id": "live-" + secrets.token_hex(16),
+            "account_hash": hashlib.sha256(user["password_hash"].encode()).hexdigest(),
+            "expires": now + cfg["session_seconds"],
+        }
         store.state("auth-session:" + hashlib.sha256(token.encode()).hexdigest(), session)
         response = JSONResponse({"status": "signed_in"})
-        response.set_cookie(COOKIE, token, max_age=cfg["session_seconds"], httponly=True,
-                            secure=settings.auth_cookie_secure, samesite="strict", path="/")
+        response.set_cookie(
+            COOKIE,
+            token,
+            max_age=cfg["session_seconds"],
+            httponly=True,
+            secure=settings.auth_cookie_secure,
+            samesite="strict",
+            path="/",
+        )
         return response
 
     @app.post("/auth/demo")
@@ -208,8 +266,9 @@ def install_auth(app, settings, store, service):
         token = request.cookies.get(COOKIE, "")
         store.state("auth-session:" + hashlib.sha256(token.encode()).hexdigest(), {"expires": 0})
         response = JSONResponse({"status": "signed_out"})
-        response.delete_cookie(COOKIE, path="/", secure=settings.auth_cookie_secure, httponly=True,
-                               samesite="strict")
+        response.delete_cookie(
+            COOKIE, path="/", secure=settings.auth_cookie_secure, httponly=True, samesite="strict"
+        )
         return response
 
     @app.post("/auth/new-review")

@@ -68,7 +68,7 @@ def create_app(
     settings: Settings | None = None, *, retrain_backend=None, recheck_backend=None, cvat_client=None
 ) -> FastAPI:
     settings = settings or Settings.configured()
-    store = ReviewStore(settings.database, settings.database_url)
+    store = ReviewStore(settings.database, settings.database_url, settings.store_namespace)
     service = QueueService(settings, store)
     models = ModelManager(settings, store, service, retrain_backend)
     saved = SavedLabels(settings, service, cvat_client)
@@ -259,6 +259,9 @@ def create_app(
     from src.api.job_registry import install_intake
 
     install_intake(app, settings, cvat_client)
+    from src.api.uploads import install_uploads
+
+    install_uploads(app, settings, store)
     install_auth(app, settings, store, service)
     return app
 

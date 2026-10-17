@@ -16,9 +16,10 @@ class DuplicateSubmission(ValueError):
 
 
 class ReviewStore:
-    def __init__(self, path: Path, database_url: str | None = None):
+    def __init__(self, path: Path, database_url: str | None = None, namespace: str = ""):
         self.path = path
         self.database_url = database_url
+        self.namespace = namespace
         self._initialized = False
         self._schema_lock = threading.Lock()
 
@@ -114,6 +115,7 @@ class ReviewStore:
             return [self._decode(row) for row in rows]
 
     def state(self, key: str, value: dict | None = None) -> dict | None:
+        key = self.namespace + key
         with self.connection() as db:
             if value is not None:
                 db.execute(
@@ -134,12 +136,13 @@ class ReviewStore:
             for key, value in values.items():
                 db.execute(
                     "INSERT INTO state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                    (key, json.dumps(value, allow_nan=False)),
+                    (self.namespace + key, json.dumps(value, allow_nan=False)),
                 )
 
     def state_items(self, prefix: str) -> dict[str, dict]:
+        prefix = self.namespace + prefix
         with self.connection() as db:
             rows = db.execute(
                 "SELECT key, value FROM state WHERE substr(key, 1, ?) = ?", (len(prefix), prefix)
             )
-            return {row["key"]: json.loads(row["value"]) for row in rows}
+            return {row["key"][len(self.namespace):]: json.loads(row["value"]) for row in rows}

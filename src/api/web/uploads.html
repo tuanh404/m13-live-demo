@@ -1,0 +1,18 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M13 · Bộ ảnh của tôi</title><link rel="stylesheet" href="/assets/review.css"><link rel="stylesheet" href="/assets/login.css">
+<script type="module" src="/assets/uploads.js"></script></head><body>
+<header class="topbar"><a class="brand" href="/">M13 · Review</a><strong>Bộ ảnh của tôi</strong><a href="/login">Trang bắt đầu</a></header>
+<section class="report-page upload-page"><h1>Kiểm tra bộ ảnh của tôi</h1>
+<p>Tải ảnh và nhãn YOLO để tìm nghi vấn, rồi review ngay trên web.</p>
+<p class="upload-scope">Kiểm một phần: hình học/ngữ cảnh. Chưa chạy detector hoặc guideline; chưa kiểm được box có bám đúng vật thể hay vật thể bị bỏ sót. Điểm0 không bảo đảm đúng.</p>
+<ol><li>Chuẩn bị1–10ảnh JPG/PNG <strong>1280×720</strong>, ZIP tối đa5MB.</li>
+<li>ZIP gồm <code>images/ten-anh.jpg</code>, <code>labels/ten-anh.txt</code> và <code>classes.txt</code> hoặc <code>data.yaml</code>.</li>
+<li>Mỗi dòng nhãn: <code>class_id x_center y_center width height</code>, tọa độ chuẩn hóa0–1. Ảnh không có box dùng file nhãn rỗng.</li></ol>
+<p>Lớp hỗ trợ: pedestrian, rider, car, truck, bus, train, motorcycle, bicycle, traffic light, traffic sign.</p>
+<p><a href="/my-batches/sample.zip" download>Tải gói mẫu3ảnh để thử ngay</a> · Ảnh tổng hợp, có box trùng/chồng để kiểm chức năng; không phải pilot người thật.</p>
+<form id="upload-form"><label for="archive"><strong>Chọn gói ZIP ảnh và nhãn</strong></label>
+<input id="archive" type="file" accept=".zip,application/zip" required><button id="upload-check" type="submit">Kiểm tra bộ ảnh</button></form>
+<p id="upload-status" role="status" aria-live="polite">Chọn ZIP để bắt đầu.</p><a id="uploaded-review" hidden>Review bộ vừa kiểm →</a>
+<p class="caption">Dữ liệu lưu riêng cho phiên trình duyệt hiện tại; reload/restart vẫn mở lại được. Sau đăng xuất hoặc hết hạn phiên, phiên mới không truy cập được các bộ cũ. Không tải dữ liệu nhạy cảm hoặc dữ liệu bạn không có quyền chia sẻ.</p>
+<h2>Các bộ ảnh đã kiểm trong phiên này</h2><button id="list-retry" hidden>Thử tải lại danh sách</button><ul id="batch-list"></ul>
+<p id="list-status" role="status"></p></section></body></html>
