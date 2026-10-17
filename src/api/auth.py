@@ -150,7 +150,8 @@ def install_auth(app, settings, store, service):
     @app.get("/auth/session")
     def current(request: Request):
         session = identity(request)
-        return {"enabled": True, "authenticated": bool(session), "guest_demo": settings.guest_demo,
+        guest_ready = settings.guest_demo and accounts.get("guest", {}).get("role") == "demo"
+        return {"enabled": True, "authenticated": bool(session), "guest_demo": guest_ready,
                 "identity": {k: session[k] for k in ("username", "role", "reviewer", "session_id")}
                 if session else None}
 

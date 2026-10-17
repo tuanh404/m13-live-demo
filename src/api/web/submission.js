@@ -7,7 +7,9 @@ async function load(){
     const list=document.getElementById('asset-links');list.replaceChildren();
     for(const [name,url] of Object.entries(result.assets)){
       const li=document.createElement('li'), link=document.createElement('a');
-      link.href=url;link.textContent=name;li.append(link);list.append(li);
+      link.href=url;link.textContent={'pitch.pdf':'Mở slides thuyết trình (PDF)',
+        'M13-demo.mp4':'Xem video demo','thumbnail.png':'Xem ảnh đại diện'}[name]||name;
+      li.append(link);list.append(li);
     }
     status.textContent='Video, slides và thumbnail công khai. Bộ hồ sơ chưa được nộp BTC.';
   }catch(e){status.textContent=e.message;retry.hidden=false;}

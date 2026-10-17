@@ -12,7 +12,7 @@ const state = {
   reviewer: typeof saved.reviewer === 'string' ? saved.reviewer : `web-${crypto.randomUUID().slice(0, 8)}`,
   pending: saved.pending || null, current: null, ready: false, busy: false,
   toolBusy: false, editing: false, lastImage: saved.lastImage || null,
-  order:'priority', pilot:false, live:false,
+  order:'priority', pilot:false, live:false, canCvat:false,
   queue: null, context: null, token: 0, elapsed: 0, running: null, selectedBox: null, picture: null, pictureUrl:null,
 };
 let retryAction = null;
@@ -144,6 +144,7 @@ async function select(item) {
     const detail = await request(`/web/review/${encodeURIComponent(item.image_id)}?queue_id=${state.queue.queue_id}`);
     if (token !== state.token) return;
     state.current = detail;
+    $('cvat-tools').hidden=!state.canCvat||!detail.cvat_mapped;
     $('risk').textContent = detail.model_version.startsWith('manual-unscored') ? 'Chưa chấm' : detail.risk_score;
     const reasons = detail.reasons.length ? detail.display_reasons || detail.reasons :
       ['Chưa có cảnh báo từ các phép kiểm đang bật. Điều này không bảo đảm nhãn đúng.'];
@@ -169,7 +170,8 @@ async function select(item) {
     if (!detail.annotations.length) $('label-list').append(text('li', detail.labels_verified ?
       'Snapshot không có box 2D.' : 'Chưa có snapshot nhãn được xác minh.'));
     $('warnings').textContent = detail.warnings.join(' · ');
-    $('image-caption').textContent = 'Nhãn của lần kiểm tra này; chưa đọc lại thay đổi trong CVAT. ' +
+    $('image-caption').textContent = 'Nhãn của lần kiểm tra này. ' +
+      (state.canCvat&&detail.cvat_mapped?'Thay đổi trong CVAT chỉ được cập nhật sau Save và kiểm tra lại. ':'')+
       (detail.evidence.length ? 'Màu cam là nghi vấn tự động, chưa phải lỗi được xác nhận.' : 'Chưa có box nghi vấn.');
     // A protected pilot image needs the same session header as API requests.
     const objectURL=state.pilot?URL.createObjectURL(await request(detail.image_url,{responseType:'blob'})):null;
@@ -314,6 +316,7 @@ async function boot() {
       for(const link of document.querySelectorAll('a[href="/results"],a[href="/pilot"]'))link.hidden=true;
     }
     const auth=await request('/auth/session');
+    state.canCvat=!auth.enabled||auth.identity?.role==='admin';
     if(auth.enabled){
       if(!auth.authenticated){location.replace('/login');return;}
       const identity=auth.identity;
@@ -326,11 +329,14 @@ async function boot() {
       }
     }
     const mode=auth.enabled&&auth.identity.role==='demo'?{configured:false}:await request('/pilot/status');
+    $('pilot-link').hidden=!!scopePrefix||!mode.configured;
+    if(!scopePrefix)request('/web/results').then(()=>{$('results-link').hidden=false;}).catch(()=>{});
+    request('/web/submission').then(()=>{$('submission-link').hidden=false;}).catch(()=>{});
     if (mode.configured && !mode.session) { location.replace('/pilot');return; }
     if (mode.configured) {
       if (location.pathname !== '/pilot/review') { location.replace('/pilot/review');return; }
       state.reviewer=mode.session.reviewer;state.session=mode.session.session_id;
-      state.order=mode.session.order;state.pilot=true;
+      state.order=mode.session.order;state.pilot=true;state.canCvat=false;
       $('pilot-instructions').hidden=false;$('new-session').hidden=true;$('cvat-tools').hidden=true;
       document.querySelector('.queue-pane h1').textContent=state.order==='file'?'Thứ tự file':'Hàng đợi ưu tiên';
     }

@@ -7,7 +7,7 @@
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">M13 <span>Review nhãn 2D</span></a>
-  <span id="data-kind" class="badge">Đang xác minh dữ liệu…</span><a href="/results">Kết quả baseline</a><a href="/submission">Hồ sơ demo</a><a href="/pilot">Pilot</a><span id="connection">Đang kết nối…</span>
+  <span id="data-kind" class="badge">Đang xác minh dữ liệu…</span><a id="results-link" href="/results" hidden>Kết quả baseline</a><a id="submission-link" href="/submission" hidden>Video &amp; hồ sơ</a><a id="pilot-link" href="/pilot" hidden>Pilot</a><span id="connection">Đang kết nối…</span>
 </header>
 <div class="intro"><strong>Xem nghi vấn → chọn kết luận → ảnh tiếp theo</strong>
   <span>Tool ưu tiên ảnh cần xem. Bạn là người xác nhận kết quả.</span></div>
@@ -31,7 +31,7 @@
       <p id="image-placeholder">Ảnh sẽ xuất hiện tại đây.</p></div>
     <p class="caption" id="image-caption">Nhãn hiển thị thuộc lần kiểm tra này, chưa bao gồm thay đổi vừa sửa trong CVAT.</p>
     <details id="boxes-details"><summary>Danh sách nhãn và tọa độ</summary><ul id="label-list"></ul></details>
-    <details id="cvat-tools"><summary>Sửa trong CVAT &amp; kiểm tra lại nhãn đã Save</summary>
+    <details id="cvat-tools" hidden><summary>Sửa trong CVAT &amp; kiểm tra lại nhãn đã Save</summary>
       <p>1. Mở CVAT và sửa → 2. Bấm Save trong CVAT → 3. Quay lại đây, đọc nhãn rồi kiểm tra lại.</p>
       <p>Web không biết canvas đang có thay đổi chưa Save. Kết luận review không tự sửa nhãn.</p>
       <button id="connect-cvat" disabled>Kiểm tra kết nối CVAT</button>

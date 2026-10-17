@@ -26,6 +26,19 @@ def login(client, username='demo'):
                        json={'username': username, 'password': f'unit-{username}-password'})
 
 
+def test_guest_entry_requires_an_actual_guest_account(secured):
+    secured.guest_demo = True
+    client = TestClient(create_app(secured), base_url='http://localhost')
+    assert client.get('/auth/session').json()['guest_demo'] is False
+    assert client.post('/auth/demo', headers={'Origin': 'http://localhost'}).status_code == 403
+    accounts = json.loads(secured.accounts_file.read_text())
+    accounts['users']['guest'] = dict(accounts['users']['demo'])
+    secured.accounts_file.write_text(json.dumps(accounts))
+    ready = TestClient(create_app(secured), base_url='http://localhost')
+    assert ready.get('/auth/session').json()['guest_demo'] is True
+    assert ready.post('/auth/demo', headers={'Origin': 'http://localhost'}).status_code == 200
+
+
 def test_login_guard_ownership_admin_csrf_and_restart(secured):
     app = create_app(secured)
     a = TestClient(app, base_url='http://localhost')

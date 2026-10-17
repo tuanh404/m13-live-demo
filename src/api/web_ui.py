@@ -158,6 +158,7 @@ def install_web(app: FastAPI, service: QueueService):
             "warnings": warnings,
             "labels_verified": manifest is not None,
             "label_source": "queue_snapshot",
+            "cvat_mapped": image_id in service.mapping()[0],
         }
 
     @app.get("/web/cvat/{image_id}")

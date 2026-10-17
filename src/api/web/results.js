@@ -1,6 +1,11 @@
 import {request} from './transport.js';
 const $ = id => document.getElementById(id);
 const percent = v => v == null ? 'Chưa có' : `${(v*100).toFixed(2)}%`;
+request('/auth/session').then(async auth=>{
+  if(auth.enabled&&auth.identity?.role!=='admin')return;
+  const pilot=await request('/pilot/status');
+  $('report-pilot-link').hidden=!pilot.configured;
+}).catch(()=>{});
 async function load() {
   $('report-retry').hidden = true;
   try {

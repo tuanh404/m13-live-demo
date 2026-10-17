@@ -94,3 +94,30 @@ BDD đã kiểm riêng, không copy dataset vào Git để ép test qua. Các te
 - Public presentation whitelist PDF/PNG/MP4, source/secrets404, API review vẫn401 khi không đăng nhập.
 - Team timing giữ10ảnh20/45phút và trạng thái chưa kiểm log; không tạo số lỗi/recall.
 - Browser không extension: tên box tùy chọn, chọn box, laptop/retry và bảng kết quả tách biệt.
+
+## Kết quả cuối release17/10
+
+- Local full:276passed1skipped,129,27s; skip BDD ở path mặc định. Browser/MV3/PG flags bật.
+- CI runtime bfb498e:276passed1skipped; log03-remote-ci-final.log, workflow39039111869.
+- Public: /build đúng bfb498e,3verdict/lostACK/reload/auth/oldhistory đạt; redeploy và restart thật giữ3/10.
+- Hai job20/21 được kiểm lại bằng UI, không ghi verdict hay sửa annotations; hash trước/sau khớp.
+- Backup trước có20verdict, kiểm toàn bộ nội dung rows vẫn nguyên sau phát hành; demo tự động thêm6rows
+  riêng cho nghiệm thu/video, không đưa vào pilot.
+- MP4 encode137,92s, sửa drawtext expansion=none để dấu% không mất phụ đề, kiểm frame thực;
+  browser ẩn danh phát được. Không dùng ffprobe vì máy không có; ffmpeg metadata kiểm riêng.
+- PDF12trang không overflow, thumbnail1600×900. Whitelist3assets public, source/secrets404.
+- Backup cuối restore vào DB local mới, kiểm assets/hash/verdict và vô hiệu hóa phiên đăng nhập cũ.
+  Không restore lên production; database test sau probe được drop riêng.
+
+## Bổ sung giao diện bắt đầu và chức năng khả dụng
+
+- Entry layout riêng, không kế thừa grid205px của màn review. Kiểm1366/1024/768/390px, không tràn ngang.
+- Guest auth/session lỗi có retry; mở demo lỗi không tự bật form mật khẩu. Đăng nhập tài khoản vẫn hoạt động.
+- Chỉ quảng bá guest khi backend có tài khoản guest đúng role; không đổi auth/CSRF/ownership policy.
+- CVAT chỉ hiện với người được phép và ảnh có mapping; không đưa URL nội bộ vào web review response.
+  Test Save/recheck/history cũ vẫn phải đạt, không ẩn luôn chức năng local đang dùng được.
+- Menu baseline/hồ sơ chỉ hiện khi API dữ liệu trả thành công, pilot chỉ hiện khi cấu hình/quyền phù hợp.
+  Cả trang review và trang baseline đều chặn link pilot thừa trong chế độ demo.
+- Bằng chứng bổ sung: data/mvp-ui-refresh/. Lượt test đầu phát hiện fixture thiếu guest account và
+  /web/review cố ý không chứa mapping: đã sửa fixture và dùng boolean cvat_mapped riêng, giữ URL riêng tư.
+  Chỉ kết quả targeted-fixed/full cuối được dùng cho nghiệm thu.

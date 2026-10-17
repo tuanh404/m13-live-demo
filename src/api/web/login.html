@@ -1,13 +1,54 @@
 <!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Đăng nhập · M13</title><link rel="stylesheet" href="/assets/review.css">
-<script type="module" src="/assets/login.js"></script></head><body>
-<header class="topbar"><strong>M13 · Review</strong><span>Demo có kiểm soát truy cập</span></header>
-<main class="report-page"><section><h1>Đăng nhập để thử review</h1>
-<div id="guest-intro" hidden><p>Trải nghiệm trên 10 ảnh BDD. Mỗi lượt riêng, không cần cài extension hoặc CVAT.</p>
-<button id="guest-demo" type="button">Trải nghiệm demo →</button> <a href="/submission">Video · Slides · Thumbnail</a><p>Đây là lượt thử sản phẩm, không phải số liệu pilot người thật.</p></div>
-<p>Dùng tài khoản được operator cấp. Mỗi lần đăng nhập có lượt review riêng; đây không phải pilot người thật.</p>
-<form id="login-form"><p><label>Tên đăng nhập <input id="username" autocomplete="username" required maxlength="100"></label></p>
-<p><label>Mật khẩu <input id="password" type="password" autocomplete="current-password" required maxlength="256"></label></p>
-<button id="sign-in" type="submit">Đăng nhập</button><p id="login-status" role="status"></p></form>
-</section></main></body></html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>M13 · Bắt đầu review</title>
+  <link rel="stylesheet" href="/assets/review.css">
+  <link rel="stylesheet" href="/assets/login.css">
+  <script type="module" src="/assets/login.js"></script>
+</head>
+<body class="entry-page">
+  <header class="entry-header">
+    <a class="entry-brand" href="/login" aria-label="M13 · Trang bắt đầu"><span class="entry-mark">M13</span> <span>Review nhãn 2D</span></a>
+    <a class="entry-resources" href="/submission" hidden>Video &amp; hồ sơ demo <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="entry-layout">
+    <section class="entry-story" aria-labelledby="entry-title">
+      <span class="entry-eyebrow">REVIEWER PRIORITIZATION ASSISTANT</span>
+      <h1 id="entry-title">Đúng ảnh cần xem.<br><span>Rõ lý do cần kiểm.</span></h1>
+      <p class="entry-lead">Ưu tiên ảnh có nguy cơ sai nhãn, đối chiếu vùng nghi vấn và ghi lại kết luận của bạn.</p>
+      <ol class="entry-steps">
+        <li><span>01</span><div><strong>Xem ảnh ưu tiên</strong><p>Ảnh cần chú ý được đưa lên trước.</p></div></li>
+        <li><span>02</span><div><strong>Đối chiếu nghi vấn</strong><p>Xem box, điểm rủi ro và lý do ngay cạnh ảnh.</p></div></li>
+        <li><span>03</span><div><strong>Chọn kết luận</strong><p>Lỗi thật, Bot nhầm hoặc Bỏ qua — rồi sang ảnh tiếp.</p></div></li>
+      </ol>
+      <p class="entry-principle">Máy gợi ý. Bạn là người xác nhận.</p>
+    </section>
+    <section class="entry-card" aria-labelledby="start-title">
+      <span class="entry-tag">M13 · WORKSPACE</span>
+      <h2 id="start-title">Bắt đầu review</h2>
+      <p class="entry-description" id="entry-description">Đang chuẩn bị lượt trải nghiệm của bạn…</p>
+      <div id="guest-intro" hidden>
+        <div class="entry-facts"><span>10 ảnh BDD</span><span>Chạy ngay trên web</span></div>
+        <button class="entry-primary" id="guest-demo" type="button">Trải nghiệm demo <span aria-hidden="true">→</span></button>
+        <p class="entry-helper">Không cần tài khoản hay cài đặt. Mỗi lượt thử có tiến độ riêng.</p>
+      </div>
+      <form id="login-form" hidden>
+        <label for="username">Tên đăng nhập</label>
+        <input id="username" autocomplete="username" required maxlength="100" placeholder="Tài khoản được cấp">
+        <label for="password">Mật khẩu</label>
+        <input id="password" type="password" autocomplete="current-password" required maxlength="256" placeholder="Nhập mật khẩu">
+        <button class="entry-primary" id="sign-in" type="submit">Đăng nhập <span aria-hidden="true">→</span></button>
+      </form>
+      <p id="login-status" role="status" aria-live="polite">Đang kết nối…</p>
+      <button id="entry-retry" class="entry-secondary" hidden type="button">Thử kết nối lại</button>
+      <button id="account-toggle" class="entry-account" aria-expanded="false" aria-controls="login-form" hidden type="button">Đăng nhập bằng tài khoản được cấp</button>
+      <div class="entry-bottom">
+        <a class="entry-resources" href="/submission" hidden>Xem video, slides &amp; thumbnail <span aria-hidden="true">↗</span></a>
+        <p>Điểm là mức rủi ro, không phải kết luận đúng/sai.<br>Lượt demo không được tính là pilot người thật.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="entry-footer"><span>M13 · Annotation &amp; Quality Control</span><span>Ưu tiên để kiểm kỹ hơn.</span></footer>
+</body>
+</html>

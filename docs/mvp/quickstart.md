@@ -8,6 +8,12 @@
 4. Đọc **Cần xem gì?**, chọn **Lỗi thật**(1), **Bot nhầm**(2) hoặc **Bỏ qua**(3).
 5. Kết luận được lưu rồi chuyển ảnh tiếp. Xem thống kê bên phải; reload vẫn giữ kết quả.
 
+Màn bắt đầu có một nút chính **Trải nghiệm demo**. Phần tài khoản được cấp có thể mở/đóng riêng;
+không cần nhập tài khoản để thử public demo. Lỗi kết nối có thông báo và nút thử lại.
+Menu chỉ hiện chức năng môi trường đang cung cấp: baseline khi báo cáo hợp lệ, hồ sơ khi đã publish,
+pilot khi được cấu hình và có quyền, CVAT khi ảnh có mapping và người dùng có quyền dùng.
+Public demo không hiện các nút CVAT/pilot không dùng được; các adapter local vẫn giữ nguyên.
+
 Điểm0 vẫn có thể có lỗi. Verdict chưa sửa/Save annotation. Đây là demo10ảnh cố định,
 chưa nhận upload ảnh/nhãn mới, không phải pilot. Mục baseline là lỗi tiêm, không phải số đo người thật.
 
