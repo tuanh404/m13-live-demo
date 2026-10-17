@@ -193,3 +193,26 @@ def test_web_api_retry_and_evidence_text_is_not_html(live_web):
         assert not page.evaluate('Boolean(window.injected)')
         assert not app.state.store.records()
         chrome.close()
+
+
+def test_dense_overlay_names_optional_and_team_timing_separate(live_web):
+    browser = pytest.importorskip('playwright.sync_api')
+    url, _ = live_web
+    with browser.sync_playwright() as p:
+        chrome = launch(p)
+        page = chrome.new_page(viewport={'width': 1366, 'height': 768})
+        page.goto(url)
+        browser.expect(page.locator('[data-verdict=error]')).to_be_enabled()
+        assert not page.locator('#show-box-names').is_checked()
+        page.locator('#show-box-names').check()
+        assert page.locator('#show-box-names').is_checked()
+        page.locator('#boxes-details').click()
+        page.locator('#label-list button').first.click()
+        browser.expect(page.locator('#label-list button').first).to_have_attribute('aria-pressed', 'true')
+        page.goto(url + '/results')
+        browser.expect(page.locator('#team-timing')).to_contain_text('10 ảnh')
+        browser.expect(page.locator('#team-timing')).to_contain_text('20 phút')
+        browser.expect(page.locator('#team-timing')).to_contain_text('45 phút')
+        browser.expect(page.locator('#team-timing')).to_contain_text('55.6%')
+        assert 'chưa đối chiếu log' in page.locator('.report-page').last.inner_text()
+        chrome.close()

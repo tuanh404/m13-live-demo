@@ -128,6 +128,54 @@ def check_job(client, job=9, request_id="intake-test"):
     pytest.fail("Intake fixture did not finish")
 
 
+def test_unchanged_job_new_request_reuses_verified_queue_and_preserves_verdict(intake):
+    settings, cvat, annotations, problems, cfg, requests = intake
+    app = create_app(settings, cvat_client=cvat)
+    client = TestClient(app)
+    first = check_job(client)
+    prefix = first["result"]["api_prefix"]
+    queue_id = first["result"]["queue_id"]
+    payload = dict(request_id="cached-verdict", image_id="shared-basename", verdict="skip",
+                   reviewer="unit", seconds_spent=1, queue_id=queue_id)
+    assert client.post(prefix + "/verdict", json=payload).status_code == 200
+    image_reads = sum("type=frame" in url for url in requests)
+    again = check_job(client, request_id="new-click-same-saved-input")
+    assert again["result"]["cache_hit"]
+    assert again["result"]["queue_id"] == queue_id
+    assert sum("type=frame" in url for url in requests) == image_reads
+    assert client.get(prefix + "/stats").json()["review_events"] == 1
+    # Saved annotation changes invalidate this cache, even with identical image bytes.
+    annotations[9]["version"] += 1
+    annotations[9]["shapes"][0]["points"][0] = 100
+    changed = check_job(client, request_id="new-saved-input")
+    assert not changed["result"].get("cache_hit")
+    assert changed["result"]["queue_id"] != queue_id
+    assert sum("type=frame" in url for url in requests) == image_reads + 1
+    assert client.post(prefix + "/verdict", json=payload).json()["duplicate"] is True
+    app.state.job_registry.pool.shutdown(wait=True)
+
+
+def test_cache_refetches_corrupted_local_image_without_overwriting_old_snapshot(intake):
+    from pathlib import Path
+
+    settings, cvat, annotations, problems, cfg, requests = intake
+    app = create_app(settings, cvat_client=cvat)
+    client = TestClient(app)
+    first = check_job(client)
+    key = first["result"]["api_prefix"].split("/")[-1]
+    active = app.state.job_registry.store.state("job:" + key)
+    broken = Path(active["output"]) / "images/shared-basename.jpg"
+    broken.write_bytes(b"corrupted cache fixture")
+    second = check_job(client, request_id="verify-image-cache")
+    assert not second["result"].get("cache_hit")
+    assert first["result"]["queue_id"] != second["result"]["queue_id"]
+    assert sum("type=frame" in url for url in requests) == 2
+    assert broken.read_bytes() == b"corrupted cache fixture"  # old snapshot is never overwritten
+    prefix = second["result"]["api_prefix"]
+    assert client.get(prefix + "/image/shared-basename/file").content.startswith(b"\xff\xd8")
+    app.state.job_registry.pool.shutdown(wait=True)
+
+
 def test_two_jobs_same_task_and_basename_isolated_history_recheck_restart(intake):
     settings, cvat, annotations, problems, cfg, requests = intake
     app = create_app(settings, cvat_client=cvat)

@@ -24,7 +24,8 @@ export async function request(path, options = {}) {
     }
     return body;
   } catch (error) {
-    if (error.name === 'AbortError') throw new Error('API phản hồi quá lâu; bạn có thể thử lại.');
+    if (error.name === 'AbortError') throw new Error('Dịch vụ phản hồi quá lâu; bạn có thể thử lại.');
+    if (error instanceof TypeError) throw new Error('Chưa kết nối được dịch vụ kiểm nhãn. Bấm thử lại; nếu vẫn lỗi, nhờ người phụ trách kiểm tra dịch vụ.');
     throw error;
   } finally { clearTimeout(timeout); }
 }

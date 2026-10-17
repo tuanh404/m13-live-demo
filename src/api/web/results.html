@@ -8,7 +8,12 @@ không coi số liệu của hai phiên bản là cùng một phép đánh giá.
 <p id="report-status" role="status">Đang tải báo cáo…</p><button id="report-retry" hidden>Thử lại</button>
 <div id="report" hidden><p id="report-meta"></p><div class="table-scroll"><table><thead><tr><th>Thứ tự</th><th>Recall ảnh @20%</th><th>Recall lỗi có trọng số @20%</th><th>Proxy giảm số ảnh</th></tr></thead><tbody id="report-rows"></tbody></table></div>
 <p>Proxy giảm số ảnh: so số ảnh cần xem để đạt 80% recall lỗi có trọng số với random nhiều seed. Không phải thời gian đo thật; không suy ra tiết kiệm 80% thời gian từ ngân sách 20% ảnh.</p>
-<p><strong>Thời gian tiết kiệm đo thật: chưa đo.</strong> Pilot người thật: chưa có kết quả.</p>
+<p>Pilot 30 ảnh có log để đối chiếu: chưa có kết quả. Số liệu nhóm cung cấp được trình bày riêng bên dưới.</p>
 <img id="gain" src="/web/results/gain.png" alt="Gain curve trên lỗi tiêm, cùng split và đáp án">
 <h2>Theo loại lỗi tiêm</h2><ul id="per-type"></ul>
-<details><summary>Nguồn, hash và giới hạn</summary><pre id="report-source"></pre></details></div></section></body></html>
+<details><summary>Nguồn, hash và giới hạn</summary><pre id="report-source"></pre></details></div></section>
+<section class="report-page"><h2>Thời gian nhóm cung cấp · cùng 10 ảnh</h2>
+<p id="team-timing" role="status">Đang tải…</p>
+<p>Kết quả nhóm cung cấp, chưa đối chiếu log và quy trình đo. Chưa kiểm soát ảnh hưởng nhớ ảnh giữa hai lượt.
+Không phải pilot 30 ảnh; không suy rộng sang batch khác hoặc suy ra recall/số lỗi.</p>
+<button id="timing-retry" hidden>Thử tải lại số liệu nhóm</button></section></body></html>

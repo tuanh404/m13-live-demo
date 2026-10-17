@@ -3,13 +3,32 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: m13test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U m13test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      M13_TEST_DATABASE_URL: postgresql://m13test@127.0.0.1:5432/postgres
+      M13_BROWSER_TESTS: '1'
+      M13_WEB_BROWSER_TESTS: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -e '.[dev,demo,postgres]'
-      - run: pytest -q
+      - run: pip install -e '.[dev,demo,postgres,gbm,guideline,browser]'
+      - run: python -m playwright install --with-deps chromium
+      - run: python .github/scripts/check_repo.py
       - run: ruff check .
+      - run: pytest -q -rs

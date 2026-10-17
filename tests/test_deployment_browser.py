@@ -36,7 +36,8 @@ def test_clean_browser_login_session_isolation_reload_and_logout(secured):
                     target.locator('#username').fill('demo')
                     target.locator('#password').fill('unit-demo-password')
                     target.locator('#sign-in').click()
-                    browser.expect(target.locator('[data-verdict=error]')).to_be_enabled()
+                    # Password hashing and the initial image share a busy runner.
+                    browser.expect(target.locator('[data-verdict=error]')).to_be_enabled(timeout=15000)
 
                 enter(page)
                 browser.expect(page.locator('#cvat-tools')).to_be_hidden()

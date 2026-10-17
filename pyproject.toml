@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel>=0.41"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "m13-reviewer-prioritization"
 version = "0.1.0"

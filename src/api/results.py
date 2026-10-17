@@ -9,6 +9,15 @@ from src import config, pipeline
 
 
 def install_results(app, settings):
+    @app.get("/web/team-timing")
+    def team_timing():
+        from src.api.team_timing import read_timing
+
+        try:
+            return read_timing()
+        except (OSError, ValueError, KeyError, TypeError):
+            raise HTTPException(503, "Chưa đọc được kết quả nhóm cung cấp") from None
+
     def read():
         if not settings.evaluation_file or not settings.evaluation_file.is_file():
             raise HTTPException(404, "Chưa cấu hình báo cáo baseline đã tái lập")

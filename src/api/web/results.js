@@ -29,3 +29,12 @@ async function load() {
   } catch(e) { $('report-status').textContent=e.message;$('report').hidden=true;$('report-retry').hidden=false; }
 }
 $('report-retry').addEventListener('click',load);load();
+async function loadTiming() {
+  $('timing-retry').hidden=true;
+  try {
+    const t=await request('/web/team-timing');
+    $('team-timing').textContent=`${t.image_count} ảnh: có trợ lý ${t.assisted_minutes} phút; `+
+      `thủ công ${t.manual_minutes} phút. Mức giảm tính từ số liệu này: ${(t.reduction_fraction*100).toFixed(1)}%.`;
+  }catch(e){$('team-timing').textContent=e.message;$('timing-retry').hidden=false;}
+}
+$('timing-retry').addEventListener('click',loadTiming);loadTiming();

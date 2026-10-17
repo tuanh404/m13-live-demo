@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-10-17T20:55:47.199552+07:00",
+  "base_commit": "72b1e4c05f37969f0806746862a7657d585502ce",
+  "branch": "feat/tuanh-mvp-live-rebuild",
+  "uncommitted_working_tree": true,
+  "pytest_passed": 276,
+  "pytest_skipped": 1,
+  "pytest_seconds": 133.91,
+  "pytest_log_sha256": "8603ac63e5c998e36de6c11d07eee409187f99dc419475de315573efe0c3f592",
+  "opt_in": [
+    "M13_BROWSER_TESTS",
+    "M13_WEB_BROWSER_TESTS",
+    "M13_TEST_DATABASE_URL"
+  ],
+  "skip": "BDD loader default path absent; separate acquired BDD bundle checked independently",
+  "real_CVAT_jobs": [
+    20,
+    21
+  ],
+  "annotations": "synthetic test boxes on real BDD photos",
+  "human_pilot": false,
+  "usability_with_new_person": "not_evaluated",
+  "public_deploy_commit": null,
+  "remote_ci": null,
+  "L06_changes_deployed": false,
+  "team_timing": "10 images,20/45 minutes, team-reported; logs not verified"
+}

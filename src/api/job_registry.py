@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from src import config, pipeline
 from src.api.cvat_session import authenticated_client
 from src.api.job_intake import IntakeError, JobReader, origin, workspace_key
+from src.api.job_predictions import cache_identity, select_predictions
 from src.api.saved_labels import atomic_json, canonical
 from src.api.store import ReviewStore
 
@@ -55,6 +56,10 @@ class JobRegistry:
             "options": copy.deepcopy(config.load("pipeline")),
             "weights": copy.deepcopy(config.load("weights")["signals"]),
         }
+        self.refresh_profile()
+
+    def refresh_profile(self):
+        self.profile["detector_cache"] = cache_identity(self.cfg, self.profile["options"])
 
     def identity(self, value):
         if origin(value.cvat_origin) != origin(self.settings.cvat_url):
@@ -68,7 +73,50 @@ class JobRegistry:
 
         return nullcontext(self.client) if self.client else authenticated_client(self.settings.cvat_url)
 
+    def cached_result(self, value, source, description):
+        """Reuse a verified publication, without resetting verdicts on an unchanged job."""
+        active = self.store.state("job:" + value["workspace"])
+        if not active or active["source"] != source or active["profile"] != value["profile"]:
+            return None
+        try:
+            path = Path(active["queue_file"])
+            manifest = json.loads(path.with_suffix(".manifest.json").read_text())
+            for kind in ("queue", "labels", "features", "evidence"):
+                if pipeline.sha256(pipeline.located(manifest[kind + "_file"])) != manifest[kind + "_sha256"]:
+                    return None
+            if manifest.get("preds_file") and (
+                pipeline.sha256(pipeline.located(manifest["preds_file"])) != manifest["preds_sha256"]
+            ):
+                return None
+            for name, digest in manifest["provenance"]["image_sha256"].items():
+                candidates = [Path(active["output"]) / "images" / (name + suffix)
+                              for suffix in (".jpg", ".png")]
+                files = [p for p in candidates if p.is_file()]
+                if len(files) != 1 or pipeline.sha256(files[0]) != digest:
+                    return None
+            columns = ["image_id", "task_id", "job_id", "frame"]
+            mapping = pd.read_parquet(Path(active["output"]) / "cvat_map.parquet")
+            expected = [{k: row[k] for k in columns} for row in description["mapping"]]
+            if mapping[columns].to_dict("records") != expected:
+                return None
+            # A later per-image recheck is a different publication. Checking the
+            # entire job must not switch it back to the original intake queue.
+            db = self.root / value["workspace"] / "review.db"
+            model = ReviewStore(db).state("model") if db.exists() else None
+            if model and Path(model["queue_file"]) != path:
+                return None
+            return {
+                "review_url": f"/jobs/{value['workspace']}/",
+                "api_prefix": f"/jobs/{value['workspace']}",
+                "images": len(description["frames"]),
+                "queue_id": manifest["queue_sha256"],
+                "cache_hit": True,
+            }
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
     def status(self, value):
+        self.refresh_profile()
         key = self.identity(value)
         with self.reader() as client:
             description = JobReader(self.settings.cvat_url, client, self.cfg).describe(
@@ -86,7 +134,8 @@ class JobRegistry:
             "needs_check": not active or active["source"] != source or active["profile"] != self.profile,
             "review_url": f"/jobs/{key}/" if active else None,
             "api_prefix": f"/jobs/{key}" if active else None,
-            "scope": "Kiểm một phần: hình học/ngữ cảnh; chưa có detector, guideline hoặc GBM cho job này.",
+            "scope": "Kiểm một phần: hình học/ngữ cảnh; detector chỉ dùng khi cache khớp hash ảnh "
+            "và model. Chưa có guideline đã duyệt cho job này.",
             "operation": self.public_operation(operation),
         }
 
@@ -97,6 +146,7 @@ class JobRegistry:
         return {k: operation.get(k) for k in ("request_id", "status", "progress", "message", "result")}
 
     def start(self, value):
+        self.refresh_profile()
         key = self.identity(value)
         payload = {**value.model_dump(), "profile": self.profile, "workspace": key}
         request_key = "request:" + value.request_id
@@ -156,6 +206,15 @@ class JobRegistry:
                     reader = JobReader(self.settings.cvat_url, client, self.cfg)
                     description = reader.describe(value["task_id"], value["job_id"])
                     source = hashlib.sha256(canonical(description)).hexdigest()
+                    cached = self.cached_result(value, source, description)
+                    if cached:
+                        reader.check_unchanged(description)
+                        operation.update(
+                            status="partial", result=cached,
+                            message="Nhãn đã Save và cấu hình không đổi; dùng lại kết quả đã kiểm.",
+                        )
+                        self.store.state("request:" + request_id, operation)
+                        return
                     output = self.root / value["workspace"] / "snapshots" / uuid4().hex
                     hashes = reader.read_images(
                         description,
@@ -164,6 +223,11 @@ class JobRegistry:
                     )
                     update("checking", "Đang tính các phép kiểm hình học/ngữ cảnh")
                     frozen = value["profile"]
+                    preds = select_predictions(
+                        self.cfg, frozen["options"], hashes, output, frozen.get("detector_cache")
+                    )
+                    checks = "hình học/ngữ cảnh" + (" và bất đồng detector" if preds else "")
+                    update("checking", "Đang kiểm " + checks)
                     version = "job-" + uuid4().hex
                     result = pipeline.publish(
                         description["frames"],
@@ -172,6 +236,7 @@ class JobRegistry:
                         names=frozen["signals"],
                         weights=frozen["weights"],
                         options=frozen["options"],
+                        preds_file=preds,
                         provenance={
                             "kind": "saved_cvat_job",
                             "server": origin(self.settings.cvat_url),
@@ -181,7 +246,8 @@ class JobRegistry:
                             "source_sha256": source,
                             "image_sha256": hashes,
                             "profile": frozen["name"],
-                            "missing": ["detector_predictions", "approved_guideline", "GBM"],
+                            "detector_cache": frozen.get("detector_cache") if preds else None,
+                            "missing": ([] if preds else ["detector_predictions"]) + ["approved_guideline"],
                         },
                     )
                     reader.check_unchanged(description)
@@ -200,7 +266,9 @@ class JobRegistry:
                 }
                 operation.update(
                     status="partial",
-                    message="Đã kiểm hình học/ngữ cảnh; chưa chạy detector/guideline/GBM",
+                    message="Đã kiểm " + checks + "; chưa kiểm guideline đã duyệt. "
+                    + ("Detector dùng predictions cache, không inference mới." if preds
+                       else "Chưa có predictions khớp ảnh; chưa kiểm bất đồng detector."),
                     result={
                         "review_url": f"/jobs/{value['workspace']}/",
                         "api_prefix": f"/jobs/{value['workspace']}",
@@ -307,7 +375,10 @@ def install_intake(app, settings, client=None):
 
     @app.post("/intake/check", status_code=202)
     def check(value: CheckJob):
-        return registry.start(value)
+        try:
+            return registry.start(value)
+        except IntakeError as exc:
+            raise HTTPException(503, str(exc)) from None
 
     @app.get("/intake/requests/{request_id}")
     def request_status(request_id: str):

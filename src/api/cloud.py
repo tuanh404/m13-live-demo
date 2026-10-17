@@ -49,6 +49,17 @@ def prepare_bundle(source, output, *, acquisition, evaluation=None):
     version = record["version"]
     manifest_file = source / f"ranked_queue_{version}.manifest.json"
     manifest = json.loads(manifest_file.read_text())
+    from src.api.audit import validate_plan
+
+    plan = validate_plan(manifest["audit_plan"])
+    if (
+        plan["source_model_version"] != version
+        or plan["source_queue_id"] != record["identity"]["source_queue_sha256"]
+        or manifest["selection"]["source_n_images"] != plan["N"]
+        or manifest["selection"]["source_ranks"]
+        != {i: plan["source_ranks"][i] for i in manifest["selection"]["source_ranks"]}
+    ):
+        raise ValueError("Release cần queue/score/plan cùng nguồn và phiên bản")
     names = [
         f"ranked_queue_{version}.csv",
         f"evidence_{version}.jsonl",

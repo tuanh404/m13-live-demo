@@ -21,9 +21,10 @@ async function poll() {
     }
     if(operation.status==='failed'){busy=false;$('check-job').disabled=false;$('check-job').textContent='Thử kiểm tra lại';return;}
     busy=true;$('check-job').disabled=true;setTimeout(poll,1000);
-  }catch(e){busy=false;$('intake-status').textContent=e.message;$('check-job').disabled=false;}
+  }catch(e){busy=false;$('intake-status').textContent=e.message;$('check-job').disabled=false;$('retry-intake').hidden=false;}
 }
 async function boot() {
+  $('retry-intake').hidden=true;
   try {
     const data=await request('/intake/status?'+new URLSearchParams(identity));
     $('intake-scope').textContent=data.scope;
@@ -34,8 +35,12 @@ async function boot() {
       pending=data.operation.request_id;localStorage.setItem(key,pending);
     }
     if(pending)poll();
-  }catch(e){$('intake-status').textContent=e.message;}
+  }catch(e){$('intake-status').textContent=e.message;$('retry-intake').hidden=false;}
 }
+$('retry-intake').onclick=()=>{
+  $('retry-intake').hidden=true;
+  if(pending)poll();else boot();
+};
 $('check-job').onclick=async()=>{
   if(busy)return;busy=true;$('check-job').disabled=true;
   pending ||= crypto.randomUUID();localStorage.setItem(key,pending);

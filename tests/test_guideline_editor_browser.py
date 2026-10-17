@@ -35,7 +35,7 @@ def test_editor_tables_save_invalid_quote_and_fixture_human_confirmation(tmp_pat
     thread.start()
     try:
         with browser.sync_playwright() as playwright:
-            chromium = playwright.chromium.launch(headless=True)
+            chromium = playwright.chromium.launch(headless=True, channel="chromium")
             page = chromium.new_page()
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))

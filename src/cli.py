@@ -384,7 +384,8 @@ def cmd_review_prepare(args) -> int:
     result = prepare(queue, args.images, args.out, source_root=root, limit=limit,
                      purpose=args.purpose, original_labels=original, cvat_url=args.url,
                      role="pilot" if args.pilot else "review",
-                     exclude_image_ids=exclusion_ids(args.exclude_batch))
+                     exclude_image_ids=exclusion_ids(args.exclude_batch),
+                     include_image_ids=exclusion_ids(args.include_batch) if args.include_batch else None)
     print(json.dumps({"folder": str(args.out.resolve()), "images": result["images"],
                       "version": result["version"], "purpose": result["purpose"]}, indent=2))
     return 0
@@ -705,6 +706,8 @@ def main(argv: list[str] | None = None) -> int:
     selection.add_argument("--pilot", action="store_true", help="30 ảnh từ queue nhãn gốc để chuẩn bị pilot")
     p.add_argument("--exclude-batch", type=Path, action="append", default=[],
                    help="loại ảnh của batch đã chuẩn bị khỏi lựa chọn; có thể dùng nhiều lần")
+    p.add_argument("--include-batch", type=Path, action="append", default=[],
+                   help="giữ tập ảnh demo đã chọn, lấy điểm/rank/plan từ queue nguồn đầy đủ")
     p.add_argument("--purpose", choices=["real", "development"], default="development")
     p.add_argument("--url", help="CVAT URL của máy đích; mặc định configs/paths.yaml")
     p.set_defaults(fn=cmd_review_prepare)

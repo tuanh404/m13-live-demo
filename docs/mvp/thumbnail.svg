@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#0b1731"/><stop offset="1" stop-color="#183d63"/></linearGradient><style>text{font-family:DejaVu Sans,Arial,sans-serif;fill:white}.small{font-size:25px;fill:#bed2e7}.card{fill:#1d4161;stroke:#4f7898;stroke-width:2}</style></defs>
+<rect width="1600" height="900" fill="url(#g)"/><circle cx="1500" cy="50" r="330" fill="#2fe1b8" opacity=".08"/>
+<rect x="80" y="65" width="275" height="67" rx="15" fill="#2fe1b8"/><text x="110" y="112" font-size="41" font-weight="bold" style="fill:#092e35">M13 / QC</text>
+<text x="80" y="245" font-size="64" font-weight="bold">Kiểm đúng chỗ.</text><text x="80" y="326" font-size="64" font-weight="bold">Review có lý do.</text>
+<text x="80" y="399" font-size="30" fill="#c9deef">Reviewer Prioritization Assistant · Annotation &amp; QC</text>
+<rect x="80" y="480" width="420" height="210" rx="22" class="card"/><text x="110" y="530" class="small">01 / HÀNG ĐỢI</text><text x="110" y="585" font-size="34">Ưu tiên ảnh cần xem</text><path d="M110 621H450M110 648H390" stroke="#2fe1b8" stroke-width="10" stroke-linecap="round"/>
+<rect x="540" y="480" width="440" height="210" rx="22" class="card"/><text x="570" y="530" class="small">02 / BẰNG CHỨNG</text><text x="570" y="585" font-size="34">Ảnh · nhãn · nghi vấn</text><rect x="570" y="616" width="140" height="45" rx="6" fill="none" stroke="#62afff" stroke-width="3"/><rect x="590" y="608" width="140" height="45" rx="6" fill="none" stroke="#ffb36b" stroke-width="3" stroke-dasharray="9 5"/>
+<rect x="1020" y="480" width="500" height="210" rx="22" class="card"/><text x="1050" y="530" class="small">03 / NGƯỜI QC QUYẾT ĐỊNH</text><text x="1050" y="585" font-size="31">Lỗi thật · Bot nhầm · Bỏ qua</text><text x="1050" y="645" class="small">Kết luận được lưu theo từng lượt</text>
+<text x="80" y="784" font-size="31" fill="#2fe1b8">m13-live-demo.onrender.com</text><text x="80" y="834" class="small">BDD100K · Demo web trải nghiệm · Điểm rủi ro không phải xác suất sai</text>
+</svg>

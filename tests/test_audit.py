@@ -171,3 +171,32 @@ def test_legacy_subset_is_unavailable_instead_of_sampling_its_tail(tmp_path):
     plan = service.audit_plan(*service.snapshot())
     assert plan['status'] == 'unavailable' and plan['audit_ids'] == []
     assert audit.summary(plan, [])['wilson95'] is None
+
+
+def test_explicit_demo_selection_keeps_full_population_plan_and_rejects_mixed_versions(tmp_path):
+    source = Path(prepare_scored(tmp_path / "source", count=40)["folder"])
+    queue = source / "ranked_queue_rule-fixture-qc-v1.csv"
+    original = pd.read_csv(queue)
+    selected = set(original.image_id.iloc[[0, 3, 15, 30]])
+    args = dict(source_root=source, limit=4, include_image_ids=selected)
+    record = prepare(queue, source / "images", tmp_path / "release", **args)
+    manifest = json.loads((tmp_path / "release" / queue.name).with_suffix(".manifest.json").read_text())
+    plan = manifest["audit_plan"]
+    assert plan["N"] == 40 and plan["source_queue_id"] == record["identity"]["source_queue_sha256"]
+    assert plan["source_model_version"] == record["version"]
+    cropped = pd.read_csv(tmp_path / "release" / queue.name)
+    assert set(cropped.image_id) == selected
+    pd.testing.assert_frame_equal(
+        cropped.drop(columns="rank").reset_index(drop=True),
+        original[original.image_id.isin(selected)].drop(columns="rank").reset_index(drop=True),
+    )
+    assert prepare(queue, source / "images", tmp_path / "release", **args) == record
+    assert prepare(source / queue.name, source / "images", tmp_path / "full", source_root=source, limit=40)
+    source_manifest = json.loads(queue.with_suffix(".manifest.json").read_text())
+    bad = original.copy()
+    bad["model_version"] = "different-scorer"
+    source_manifest["audit_plan"] = audit.make_plan(bad, "different-source")
+    queue.with_suffix(".manifest.json").write_text(json.dumps(source_manifest))
+    with pytest.raises(ValueError, match="khác phiên bản"):
+        prepare(queue, source / "images", tmp_path / "bad-release", **args)
+    assert not (tmp_path / "bad-release").exists()

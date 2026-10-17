@@ -150,3 +150,98 @@ def test_cloud_backup_restore_new_database_and_reject_overwrite(cloud_fixture, t
     finally:
         with psycopg.connect(pg_url, autocommit=True) as admin:
             admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+
+
+@pytest.mark.skipif(not os.getenv('M13_TEST_DATABASE_URL'), reason='real PostgreSQL required')
+def test_new_release_preserves_previous_snapshot_stats_session_and_lost_ack(
+    cloud_fixture, monkeypatch, tmp_path
+):
+    from src import pipeline
+
+    root, old = cloud_fixture
+    client = TestClient(create_render_app(), base_url='https://demo.example.test')
+    headers = {'Origin': 'https://demo.example.test'}
+    assert client.post('/auth/demo', headers=headers).status_code == 200
+    identity = client.get('/auth/session').json()['identity']
+    params = {'reviewer': identity['reviewer'], 'session_id': identity['session_id'], 'order': 'priority'}
+    queue = client.get('/queue', params=params).json()
+    payload = dict(request_id='before-release', image_id=queue['items'][0]['image_id'],
+                   verdict='skip', reviewer=identity['reviewer'], session_id=identity['session_id'],
+                   seconds_spent=1, queue_id=queue['queue_id'])
+    assert client.post('/verdict', json=payload, headers=headers).status_code == 200
+    # New assets and queue ID; no mutation of the old bundle or its review events.
+    new = tmp_path / 'new-bundle'
+    new.mkdir()
+    hashes = {}
+    version = 'fixture-new-release'
+    old_version = json.loads((root / 'bundle.json').read_text())['version']
+    for path in root.rglob('*'):
+        if not path.is_file() or path.name == 'bundle.json':
+            continue
+        name = str(path.relative_to(root)).replace(old_version, version)
+        raw = path.read_bytes()
+        if path.suffix in {'.json', '.csv'}:
+            raw = raw.replace(old_version.encode(), version.encode())
+        target = new / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(raw)
+        hashes[name] = pipeline.sha256(target)
+    manifest_path = new / f'ranked_queue_{version}.manifest.json'
+    manifest = json.loads(manifest_path.read_text())
+    manifest['queue_sha256'] = pipeline.sha256(new / f'ranked_queue_{version}.csv')
+    if manifest.get('audit_plan'):
+        from src.api.audit import digest
+
+        plan = manifest['audit_plan']
+        plan['policy_id'] = digest({k: v for k, v in plan.items() if k != 'policy_id'})
+    manifest_path.write_bytes(canonical(manifest))
+    hashes[manifest_path.name] = pipeline.sha256(manifest_path)
+    descriptor = {'schema': 1, 'version': version, 'images': 3, 'files': hashes,
+                  'queue_sha256': manifest['queue_sha256'], 'data_purpose': 'development'}
+    # Legacy descriptors in this fixture need the hash production descriptors already carry.
+    old_descriptor = json.loads((root / 'bundle.json').read_text())
+    old_descriptor['queue_sha256'] = queue['queue_id']
+    (root / 'bundle.json').write_bytes(canonical(old_descriptor))
+    previous = upload_bundle(root)
+    (new / 'bundle.json').write_bytes(canonical(descriptor))
+    updated = upload_bundle(new)
+    monkeypatch.setenv('M13_DEMO_BUNDLE_ID', updated['bundle_id'])
+    monkeypatch.setenv('M13_PREVIOUS_DEMO_BUNDLE_IDS', json.dumps([previous['bundle_id']]))
+    monkeypatch.setenv('M13_RENDER_DATA', str(tmp_path / 'release-runtime'))
+    restarted = TestClient(create_render_app(), base_url='https://demo.example.test')
+    restarted.cookies.update(client.cookies)
+    assert restarted.get('/auth/session').json()['authenticated']
+    current = restarted.get('/queue', params=params)
+    assert current.status_code == 200, current.text
+    assert current.json()['queue_id'] != queue['queue_id']
+    history = restarted.get('/stats', params={**params, 'queue_id': queue['queue_id']}).json()
+    assert history['review_events'] == 1
+    assert restarted.post('/verdict', json=payload, headers=headers).json()['duplicate'] is True
+
+
+@pytest.mark.skipif(not os.getenv('M13_TEST_DATABASE_URL'), reason='real PostgreSQL required')
+def test_public_presentation_is_fixed_immutable_and_never_exposes_source(cloud_fixture, tmp_path):
+    from src.api.submission import publish_assets
+
+    root, _ = cloud_fixture
+    client = TestClient(create_render_app(), base_url='https://demo.example.test')
+    assert client.get('/queue').status_code == 401
+    assert client.get('/web/submission').status_code == 404
+    folder = tmp_path / 'presentation'
+    folder.mkdir()
+    for name, raw in [('pitch.pdf', b'%PDF-fixture'), ('thumbnail.png', b'\x89PNG-fixture'),
+                      ('M13-demo.mp4', b'0000ftyp-fixture')]:
+        (folder / name).write_bytes(raw)
+    published = publish_assets(folder)
+    assert publish_assets(folder) == published
+    metadata = client.get('/web/submission').json()
+    assert metadata['id'] == published['id']
+    for item in published['assets'].values():
+        response = client.get(item['path'])
+        assert response.status_code == 200
+        assert hashlib.sha256(response.content).hexdigest() == item['sha256']
+        assert 'immutable' in response.headers['cache-control']
+    for name in ['M13-source-final.zip', '.env', 'accounts.json', 'presentation.json']:
+        assert client.get('/submission/assets/' + published['id'] + '/' + name).status_code == 404
+    assert client.get('/queue').status_code == 401
+    assert client.post('/web/submission').status_code in {401, 403, 405}

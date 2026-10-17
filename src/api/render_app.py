@@ -1,6 +1,7 @@
 """Render entrypoint: fail closed without Postgres, frozen data and a backend secret."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 
@@ -79,7 +80,30 @@ def create_render_app():
     faulthandler.dump_traceback_later(60)
     try:
         app = create_app(settings)
+        previous_ids = json.loads(os.environ.get("M13_PREVIOUS_DEMO_BUNDLE_IDS", "[]"))
+        if not isinstance(previous_ids, list) or len(previous_ids) > 5:
+            raise ValueError("Chỉ giữ tối đa 5 bundle lịch sử đã kiểm")
+        versions = app.state.store.state("versions") or {}
+        for previous in previous_ids:
+            if previous == bundle:
+                continue
+            history = artifacts.parent / ("history-" + previous)
+            old = hydrate(previous, history)
+            versions[old["version"]] = {
+                "queue_id": old["queue_sha256"],
+                "queue_file": str(history / f"ranked_queue_{old['version']}.csv"),
+                "model_version": old["version"],
+            }
+        if versions:
+            app.state.store.state("versions", versions)
     finally:
         faulthandler.cancel_dump_traceback_later()
     print("M13 startup: review API ready", flush=True)
+    @app.get("/build", include_in_schema=False)
+    def build():
+        import re
+
+        revision = os.environ.get("RENDER_GIT_COMMIT", "")
+        return {"revision": revision if re.fullmatch(r"[a-f0-9]{40}", revision) else None}
+
     return app

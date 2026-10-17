@@ -1,13 +1,41 @@
+# Dữ liệu, ảnh, model: chia qua Drive, không đưa vào git
 /data/
 /models/
-.env*
-*.env
-*.db*
-*.sqlite*
 *.parquet
-*.zip
-.venv/
+*.pt
+*.onnx
+*.jpg
+*.png
+!extension/icon16.png
+!extension/icon32.png
+!extension/icon48.png
+!extension/icon128.png
+*.mp4
+guidelines/*.docx
+guidelines/*.pdf
+
+# Python / môi trường
 __pycache__/
+*.pyc
+.venv/
+.env
+
+# Claude Code: chỉ chia sẻ skill, không chia sẻ cài đặt cá nhân
+.claude/settings.local.json
+
+# Kết quả sinh ra khi chạy (results.jsonl và báo cáo tuần vẫn commit)
+reports/ranked_queue_*.csv
+reports/ranked_queue_*.manifest.json
+reports/evidence_*.jsonl
+reports/labels_*.json
+reports/eval_*/
+reports/viz/
+reports/_det20/
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
-*.egg-info/
+configs/guidelines/drafts/
+
+# Gói/khoá ký extension tạo bằng Chrome "Pack extension"
+*.crx
+*.pem

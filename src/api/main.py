@@ -252,6 +252,9 @@ def create_app(
 
     install_web(app, service)
     install_results(app, settings)
+    from src.api.submission import install_submission
+
+    install_submission(app, settings)
     install_pilot(app, settings, store, service, saved)
     from src.api.job_registry import install_intake
 

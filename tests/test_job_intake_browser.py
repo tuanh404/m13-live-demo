@@ -30,10 +30,30 @@ def test_clean_browser_intake_progress_review_images_and_job_isolation(intake):
                 errors = []
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 for job in (9, 10):
+                    if job == 9:
+                        page.route("**/intake/status?*", lambda route: route.abort())
                     page.goto(root + f"/intake?cvat_origin=http://localhost:8080&task_id=8&job_id={job}")
+                    if job == 9:
+                        browser.expect(page.locator("#retry-intake")).to_be_visible()
+                        browser.expect(page.locator("#intake-status")).to_contain_text("dịch vụ kiểm nhãn")
+                        browser.expect(page.locator("#check-job")).to_be_disabled()
+                        page.unroute("**/intake/status?*")
+                        page.locator("#retry-intake").click()
                     browser.expect(page.locator("#check-job")).to_be_enabled()
+                    assert page.locator('input[type=url], input[name=model], input[name=batch]').count() == 0
+                    if job == 9:
+                        def lost_ack(route):
+                            assert route.fetch().status == 202
+                            route.abort()
+
+                        page.route("**/intake/check", lost_ack)
                     page.locator("#check-job").click()
+                    if job == 9:
+                        browser.expect(page.locator("#intake-status")).to_contain_text("dịch vụ kiểm nhãn")
+                        page.unroute("**/intake/check", lost_ack)
+                        page.locator("#check-job").click()
                     browser.expect(page.locator("#review-job")).to_be_visible(timeout=15000)
+                    browser.expect(page.locator("#intake-scope")).to_contain_text("Kiểm một phần")
                     page.locator("#review-job").click()
                     browser.expect(page.locator("[data-verdict=skip]")).to_be_enabled()
                     browser.expect(page.locator("#progress")).to_contain_text("0/1")
@@ -45,6 +65,7 @@ def test_clean_browser_intake_progress_review_images_and_job_isolation(intake):
                     browser.expect(page.locator("#progress")).to_contain_text("1/1")
                     page.reload()
                     browser.expect(page.locator("#progress")).to_contain_text("1/1")
+                assert len(app.state.job_registry.store.state_items("request:")) == 2
                 assert not errors
                 chrome.close()
         finally:

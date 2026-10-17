@@ -104,6 +104,10 @@ def install_auth(app, settings, store, service):
         request.state.auth_identity = session
         public = (path in {"/login", "/auth/login", "/auth/session", "/health"}
                   or path.startswith("/assets/") or (settings.guest_demo and path == "/auth/demo"))
+        if request.method in {"GET", "HEAD"} and (
+            path in {"/submission", "/web/submission"} or path.startswith("/submission/assets/")
+        ):
+            public = True
         if not public and not session:
             if "text/html" in request.headers.get("accept", "") and request.method == "GET":
                 return RedirectResponse("/login", status_code=303)
@@ -127,7 +131,8 @@ def install_auth(app, settings, store, service):
                         {"detail": "Chỉ đọc lượt review của phiên đăng nhập"}, status_code=403
                     )
         response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
+        if not (public and path.startswith("/submission/assets/") and response.status_code == 200):
+            response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Frame-Options"] = "DENY"

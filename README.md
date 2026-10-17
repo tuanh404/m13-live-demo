@@ -1,43 +1,133 @@
-# M13 · Reviewer Prioritization Assistant
+# M13 Reviewer Prioritization
 
-Bản triển khai riêng cho demo web: ưu tiên ảnh có nguy cơ lỗi nhãn, hiển thị lý do/box nghi vấn, ghi kết luận và thống kê. Người dùng mở web, bấm **Trải nghiệm demo**, đối chiếu và chọn **Lỗi thật / Bot nhầm / Bỏ qua**. Không cần extension hoặc CVAT trên máy người xem.
+Trợ lý ưu tiên review nhãn detection 2D trên BDD100K. Thay vì QC review đều 100% ảnh, hệ thống chấm điểm rủi ro sai nhãn cho từng ảnh và xếp hàng đợi review, mỗi ảnh kèm 3 lý do tiếng Việt.
 
-Source kế thừa [dự án nhóm M13](https://github.com/cuongherok4/qc2d_auto_assistant), nền `72b1e4c05f37969f0806746862a7657d585502ce`, cùng phần triển khai MVP của Tú Anh. Đây là repo deploy riêng; không thay repo/nhánh chính của nhóm.
+**Web demo đã kiểm 16/10:** https://m13-live-demo.onrender.com → **Trải nghiệm demo**.
+Không cần extension/CVAT trên máy người xem. Dùng10ảnh BDD thật, queue/predictions đã đóng băng;
+không phải inference/Gemini online hoặc pilot người thật. CVAT Save/recheck public chưa có.
+Render Free có thể cần khoảng1phút để thức dậy sau khi ngủ. Xem [triển khai và giới hạn](docs/deploy-mvp.md).
 
-## Bản demo và giới hạn
+- **Dữ liệu:** BDD100K tập val, 10k ảnh, nhãn detection 2D
+- **Chỉ số chính:** recall lỗi trong top 20% ảnh; thời gian review tiết kiệm
+- **Nhóm:** Hoàng Mạnh Cường (lead), Long (BA), Tú Anh (BE), Sơn (BE)
 
-- 10 ảnh BDD100K có provenance từ mirror Hugging Face ghim revision/hash; nhãn và detector predictions cache được đóng băng. Scorer demo là `rule-bdd-live-v1`, không phải inference/training/Gemini online.
-- Điểm là mức rủi ro/ưu tiên xem. Điểm0 không bảo đảm nhãn đúng. Verdict chỉ ghi kết luận, không tự sửa nhãn.
-- Bộ ảnh/queue/evidence/manifest và kết quả review nằm trong Postgres. Không commit ảnh, dữ liệu, DB hoặc credentials vào Git. Không dùng SQLite ephemeral của Render Free để lưu kết quả.
-- CVAT local không được quảng cáo là CVAT live. Public demo chỉ review bộ ảnh chỉ định; intake/recheck/retrain/quản trị bị chặn với tài khoản demo. Intake nhiều job được kiểm riêng ở local bằng backend allowlist và adapter bbox1280×720; thiếu detector/spec/GBM báo kiểm một phần.
-- Baseline là đánh giá offline trên lỗi tiêm có đáp án, có hash/split/seed; không phải lỗi người review xác nhận. Pilot30 người thật và thời gian tiết kiệm thực đo chưa nghiệm thu. Mọi lượt thử trên web là demo, không tự ghi thành human pilot.
+**Tiến độ (cập nhật 13/10 tối):** [ai đã xong gì, ai làm tiếp, kết quả hiện có](docs/tien-do.md).
 
-## Deploy Render Free
+**Dành cho cả người không chuyên kỹ thuật:** [Hướng dẫn 10 việc cần làm: ai làm, làm thế nào, giao gì và khi nào tính là xong](docs/huong-dan-cong-viec-de-hieu.md).
 
-`render.yaml` ghim Free Web + Free Postgres, Python3.11.17,1worker, cùng region Singapore. TLS/HTTPS do Render quản lý. Auto deploy tắt; chỉ deploy commit đã kiểm.
+**Cập nhật 13/10:** [Phân tích đề tài, hiện trạng các nhánh và phân công tiếp theo](docs/phan-tich-va-phan-cong-13-10.md) — gồm 4 sơ đồ SVG để chia sẻ với nhóm; ghi nhận phần API, CVAT, extension và guideline tools Tú Anh đã viết.
 
-1. Tạo Postgres Free và nạp bundle đã kiểm bằng `python -m src.cli render-upload <bundle>`, với `M13_DATABASE_URL` chỉ ở môi trường backend.
-2. Tạo web từ repo này. Build: `pip install --no-cache-dir -r deployment/render/requirements.lock`.
-3. Start: `python -m uvicorn src.api.render_app:create_render_app --factory --host 0.0.0.0 --port $PORT --workers 1 --no-access-log`.
-4. Cấu hình server: `M13_DATABASE_URL` là Internal URL của DB; `M13_DEMO_BUNDLE_ID` là ID artifact đã nạp; `M13_AUTH_SECRET` là secret ngẫu nhiên tối thiểu32ký tự. Không ghi giá trị vào Git, README hoặc frontend. Render cung cấp `RENDER_EXTERNAL_URL`.
-5. Healthcheck `/health`. Kiểm browser sạch: demo → ảnh/nhãn/evidence →3verdict → stats → reload/restart; hai browser phải giữ lượt riêng.
+**Xem hệ thống qua một ví dụ cụ thể:** [Ảnh + guideline → LLM trích luật → detector/rule kiểm nhãn → hàng đợi review](docs/vi-du-xuyen-suot.md), có hai hình minh họa đầu vào và kết quả từng bước.
 
-Free web ngủ sau15phút không truy cập, mở lại khoảng1phút. Free Postgres hết hạn30ngày kể từ tạo, không có backup tự động; gói này chỉ dành demo ngắn hạn. Không bật gói trả phí/autoscale. Link public chỉ công bố sau kiểm truy cập thật.
+## Bộ bàn giao MVP · cập nhật 17/10/2026
 
-## Backup và rollback
+- [Hướng dẫn sử dụng](docs/mvp/quickstart.md) · [Phạm vi hỗ trợ](docs/mvp/support-matrix.md).
+- [Kiến trúc hiện tại](docs/mvp/architecture.svg) · [Đặc tả/thiết kế](docs/mvp/spec-design.md).
+- [Kiểm thử và ma trận nghiệm thu](docs/mvp/testing.md) · [Trạng thái13nhóm](docs/mvp/acceptance-status.md).
+- [Pitch deck12slide mở bằng browser](docs/mvp/pitch.html) · [Nguồn thumbnail](docs/mvp/thumbnail.svg).
+- [Kịch bản/video](docs/mvp/video-script.md) · [Nhật ký phiên16/10](reports/weekly-mvp-2026-10-16.md).
+- PDF, PNG, MP4, source ZIP và submission manifest: `data/mvp-submission/` trên máy triển khai.
+  Source ZIP là local/private; PDF/PNG/MP4 có đường chia sẻ `/submission` khi đã publish. Chưa nộp BTC. Không commit dữ liệu/video/DB/secrets.
 
-`python -m src.cli render-backup --out data/backup-new.json` xuất assets/verdict/state nhất quán, file0600. Giữ file ngoài Git. `render-restore <backup>` chỉ cho DB mới trống, vô hiệu hóa phiên đăng nhập cũ. Không restore đè DB đang dùng. Rollback source sang commit đã kiểm với cùng bundle ID/schema tương thích; backup trước khi đổi schema. Dịch vụ Render quản lý restart, dữ liệu và ảnh khôi phục từ DB sau mất disk.
+Web public đã kiểm tại **https://m13-live-demo.onrender.com**. Repo nhóm public;
+repo deploy riêng `tuanh404/m13-live-demo` giữ private. Bản sửa được phát hành riêng;
+không commit/push repo nhóm. Commit/CI/live thực được ghi trong checkpoint bàn giao.
+Không cần extension cho web public. Local intake hỗ trợ bbox1280×720/classes BDD, operator cấp quyền
+server/task một lần; reviewer chỉ bấm nút. Chưa có public upload ảnh/nhãn mới hoặc CVAT public.
 
-## Kiểm thử
+Baseline tái lập:2.000ảnh test/seed42, lỗi tiêm; recall@20% theo ảnh27,67%, random20,15%,
+weighted30,99%. [Số liệu và provenance](reports/mvp-evaluation-summary.json).
+Không phải recall lỗi thật hoặc time_saved đã kiểm log; pilot30×2reviewer còn chờ.
+[Kết quả thời gian nhóm cung cấp](reports/team-timing.json) được trình bày riêng ở `/results`.
+Hồ sơ video/slides/thumbnail công khai sau khi publish tại `/submission`; source mới giữ private/local.
+Release demo mới lấy score/rank/evidence và audit plan từ cùng queue rule-mvp-original-v1
+10.000 ảnh; giữ đúng 10 ảnh demo cũ. Audit chèn xen kẽ nên không phải mọi ảnh giảm dần theo điểm.
+Recheck giữ lịch review gốc và tạo snapshot mới, không sửa baseline cũ.
+Ảnh/nhãn BDD100K ©2018 The Regents of the University of California, dùng demo giáo dục/nghiên cứu;
+[giấy phép](deployment/render/BDD100K-LICENSE.txt), provenance mirror/hash trong bundle ngoài Git.
+
+Phần bắt đầu và sơ đồ đề xuất cũ bên dưới được giữ để tham khảo source nhóm;
+để thử bản MVP hiện tại, ưu tiên quickstart/architecture ở trên.
+
+## Bắt đầu
 
 ```bash
-python -m pip install -e '.[dev,demo,postgres]'
-pytest -q
-ruff check .
+uv venv --python 3.11 && source .venv/bin/activate
+uv pip install -e ".[dev]"
+pytest -q && ruff check .
 ```
 
-Integration Postgres thật chỉ bật bằng `M13_TEST_DATABASE_URL` trỏ DB kiểm riêng, tài khoản có quyền tạo DB tạm. Browser opt-in: `M13_WEB_BROWSER_TESTS=1` hoặc `M13_BROWSER_TESTS=1`; không dùng test tự động làm pilot.
+Thành viên mới: đọc [CONTRIBUTING.md](CONTRIBUTING.md) để biết luồng, phân công, quy ước ghép code và quy trình hằng ngày.
 
-## Dữ liệu
+## Thử web review local, không cần extension
 
-Ảnh/nhãn BDD100K: Copyright ©2018 The Regents of the University of California. Chỉ dùng demo giáo dục/nghiên cứu, theo [giấy phép dữ liệu](deployment/render/BDD100K-LICENSE.txt). Nguồn mirror/checksum được giữ trong bundle; không phải danh sách checksum ảnh chính thức của BDD. Tham khảo [BDD100K](https://bdd-data.berkeley.edu/).
+Sau bước cài đặt, cài thêm Pillow và tạo batch tổng hợp riêng (không tải BDD hay gọi detector):
+
+```bash
+uv pip install -e '.[demo]'
+python -m src.cli review-fixtures --scored --count 10 --out data/web-demo
+source data/web-demo/review/runtime.env
+python -m src.cli serve --port 8000
+```
+
+Mở **http://127.0.0.1:8000/**: xem ảnh, nhãn snapshot và nghi vấn → chọn **Lỗi thật / Bot nhầm / Bỏ qua** (phím **1/2/3**) → ảnh tiếp → thống kê. Không cần CVAT, URL API hay key để thử luồng này. SQLite giữ lịch sử sau khi khởi động lại; trình duyệt giữ phiên review. Nút tạo lượt demo mới nằm trong thông tin nâng cao, không xóa lịch sử.
+
+Đây là **fixture**, chỉ kiểm `edge_no_trunc`, không chứng minh box bám đúng vật thể. Điểm 0–100 là mức rủi ro để ưu tiên, không phải xác suất sai; 0 không bảo đảm nhãn đúng. Cảnh báo detector cũng cần người xác nhận. **Lỗi thật**: người review xác nhận lỗi; **Bot nhầm**: đã đối chiếu và không xác nhận nghi vấn; **Bỏ qua**: chưa đủ thông tin, không tính vào mẫu số tỷ lệ lỗi. Verdict không tự sửa nhãn. Nhãn và evidence được đọc từ snapshot kiểm hash của queue, không lấy nhãn CVAT đang chỉnh.
+
+Lệnh trên tạo URL local riêng; bản public ở link đầu README. Số đo tự thử/fixture không phải pilot người thật; `time_saved` trong đánh giá offline là proxy, chưa phải thời gian tiết kiệm đã đo.
+
+Đã có mục **Sửa trong CVAT & kiểm tra lại nhãn đã Save** trên web: kiểm kết nối →
+mở đúng task/job/frame → sửa và **Save trong CVAT** → quay về đọc nhãn đã lưu → kiểm
+tra lại. Điểm/overlay chỉ đổi sau khi scorer chạy thành công trên nhãn mới; có lịch
+sử trước/sau, queue cũ giữ nguyên. Nếu CVAT chưa sẵn sàng, vẫn xem ảnh và ghi verdict
+trên web; không cung cấp link CVAT localhost cho URL web public. Backend API cần
+CVAT_USER/CVAT_PASSWORD trong môi trường riêng cho luồng này, không nhập key lên web.
+Đồng hồ web chỉ đo phần xem web có focus, không đo thời gian sửa trong CVAT.
+
+Audit dùng5% phần ngoài top20%, seed42; freeze trên queue gốc trước khi cắt demo,
+giữ rank nguồn và policy riêng. Với10k ảnh:2000top +400audit, tổng24%, không phải ngân
+sách20%. Xem [định nghĩa và lệnh export](docs/dinh-nghia-audit.md).
+
+## Baseline và pilot (L04)
+
+Trang **`/results`** đọc `M13_EVALUATION_FILE` do backend cấu hình (file `evaluation.json`
+từ `baseline-replay`), không yêu cầu người dùng nhập đường dẫn. Bảng/gain curve cùng split,
+đáp án và hash; lỗi tiêm tách khỏi lỗi QC thật, proxy số ảnh tách khỏi thời gian đo từ người thật.
+CLI `baseline-replay --help` kiểm nguồn nhãn/đáp án/artifacts trước khi đánh giá; không chạy
+detector/training hoặc chọn tham số trên test. `review-acceptance --help` tạo checklist đầu vào,
+không tự nhận có đủ file là đã nghiệm thu10ảnh BDD.
+
+Trang **`/pilot`** là quy trình người thật tự đăng ký, giữ đúng arm/phiên/thứ tự và gửi phản hồi.
+Ảnh pilot không xem được trước đăng ký; fixture không được đăng ký thành human pilot.
+Xem [hướng dẫn pilot30ảnh](docs/pilot-30.md) cho operator và hai reviewer. Hiện chưa có dữ liệu
+pilot người thật. Nhóm cung cấp kết quả cùng 10 ảnh: assisted20phút/manual45phút,
+mức giảm tính từ hai số này55,6%; chưa đối chiếu log, không phải pilot30ảnh.
+
+## Chạy pipeline
+
+```bash
+python -m src.cli load                                    # 1. đọc nhãn BDD100K
+python -m src.cli inject                                  # 2. tiêm lỗi có đáp án
+python -m src.cli rank --version rule-v0                  # 3–4. queue + evidence + manifest (thêm --preds/--spec khi có)
+python -m src.cli evaluate --queue reports/ranked_queue_rule-v0.csv   # 7. so file order/random, gain curve
+uvicorn src.api.main:app --reload                         # 5. API cho giao diện review
+```
+
+## Cấu trúc
+
+```
+configs/          tham số: paths, injection, weights, learning, class_map, batches, guidelines/
+src/data/         loader BDD100K, tiêm lỗi
+src/features/     tín hiệu rủi ro (hình học, detector, guideline) + SignalResult
+src/guideline/    LLM đọc guideline -> spec YAML
+src/scoring/      chấm điểm rule, GBM, học lại
+src/eval/         metric, ghi reports/results.jsonl
+src/api/          FastAPI hàng đợi + verdict
+src/cli.py        điểm vào duy nhất
+extension/        Chrome extension (side panel trong CVAT)
+tests/            test + fixtures nhỏ, chạy không cần dữ liệu thật
+docs/             đề xuất, tóm tắt dự án
+reports/          báo cáo tuần, kết quả đánh giá
+```
+
+Dữ liệu, ảnh và model không đưa vào git; chia sẻ qua Drive.

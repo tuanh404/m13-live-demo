@@ -1,0 +1,95 @@
+{
+  "data_kind": "synthetic_errors",
+  "method": "ranked_queue",
+  "model_version": "rule-v1.2",
+  "n_images": 2000,
+  "n_errors": 601,
+  "n_error_images": 300,
+  "seed": 42,
+  "split": "test",
+  "top_frac": 0.2,
+  "recall20_img": 0.27666666666666667,
+  "recall20_weighted": 0.30988446726572455,
+  "time_saved": 0.21071573874127625,
+  "time_saved_kind": "image_count_proxy_not_measured_time",
+  "measured_time_saved": null,
+  "random_seeds": 20,
+  "file_order": {
+    "ndcg": 0.602867576841415,
+    "precision20": 0.1575,
+    "recall20_img": 0.21,
+    "recall20_time": null,
+    "recall20_weighted": 0.2233632862644411,
+    "time_saved": -0.004600506994648423
+  },
+  "random": {
+    "ndcg": {
+      "mean": 0.5971819119763577,
+      "std": 0.009043026873221005
+    },
+    "precision20": {
+      "mean": 0.151125,
+      "std": 0.018632548805786072
+    },
+    "recall20_img": {
+      "mean": 0.2015,
+      "std": 0.024843398407714764
+    },
+    "recall20_time": {
+      "mean": null,
+      "std": null
+    },
+    "recall20_weighted": {
+      "mean": 0.2047111681643127,
+      "std": 0.023631921294318462
+    },
+    "time_saved": {
+      "mean": 4.4408920985006264e-17,
+      "std": 0.029717839172040874
+    }
+  },
+  "provenance": {
+    "answer_sha256": "5b20fbf2694e65851e851d235040552fe4db232f308b790adc7437601f642572",
+    "artifact_sha256": {
+      "evidence": "38e313fef4b8c24b990bcb5c5fdab0b90f5fb2d39a492e1ed56a5aa8d016693f",
+      "features": "6b6a79474037014e883f95d8c30fb1192a77f5630bf42b803de6bc8c4c7f5d4d",
+      "labels": "936cd7df7201353c4a424c4a7b1acc3e9dbe6f94a1598f3f3226119f3e8416e8",
+      "preds": "5384e0e373614924fb8545b1f82d9ac0763ec23d294326a61d6437191d7c68b2",
+      "queue": "5ef742ac8960e2bee0158eb273049314f6668799563ca6e997f80490db129a5d"
+    },
+    "detector": {
+      "batch_size": 4,
+      "conf": 0.05,
+      "model": "PekingU/rtdetr_r50vd",
+      "revision": "df939e661d8c52e80608d1ec566561aabd25a4e7"
+    },
+    "evaluator_commit": "72b1e4c05f37969f0806746862a7657d585502ce",
+    "evaluator_source_sha256": "90224e2f16a732f643e36ea84e591cb6de61a196643a898ee3a7f8881fdb9336",
+    "injection_config_hash": "ba560b05734ae9d0adf57d0e763a7edeb304b2af6ec8d0a4208dae1da9c7e5f2",
+    "manifest_sha256": "19345c73e794e6abd342e4dc9aba001fd5c073661f051783b01bf5c3d6a2c1fd",
+    "method": "rule",
+    "original_labels_sha256": "f7cde1a3bc064b2cbd2ffbcf58b29889e7396f4a4176fd17e3d93e08dfb4ff00",
+    "producer_commit": null,
+    "queue_sha256": "5ef742ac8960e2bee0158eb273049314f6668799563ca6e997f80490db129a5d",
+    "source_labels_sha256": "35d236753064fa6b02683750f865749969946a3a149b751b3a612c2a5df2b962",
+    "spec_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "split_sha256": "b1ee781698964f0077f702eae584215349af2768b4064e920907d0e0fe07cbda",
+    "used_signals": [
+      "model_missing_label",
+      "model_class_conflict",
+      "model_loose_box",
+      "label_unsupported"
+    ],
+    "validation": {
+      "answer_errors": 2981,
+      "changed_objects": 2981,
+      "split_counts": {
+        "test": 2000,
+        "train": 6000,
+        "val": 2000
+      }
+    }
+  },
+  "source_artifact": "data/mvp-handoff/L04-baseline-final/evaluation.json",
+  "source_sha256": "53d0097d555e4fc2ac9f80ab5084444e3991f2522d570aeed73d470d3ad7f510"
+}

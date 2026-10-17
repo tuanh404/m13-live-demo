@@ -7,7 +7,7 @@
 </head>
 <body>
 <header class="topbar"><a class="brand" href="/">M13 <span>Review nhãn 2D</span></a>
-  <span id="data-kind" class="badge">Đang xác minh dữ liệu…</span><a href="/results">Kết quả baseline</a><a href="/pilot">Pilot</a><span id="connection">Đang kết nối…</span>
+  <span id="data-kind" class="badge">Đang xác minh dữ liệu…</span><a href="/results">Kết quả baseline</a><a href="/submission">Hồ sơ demo</a><a href="/pilot">Pilot</a><span id="connection">Đang kết nối…</span>
 </header>
 <div class="intro"><strong>Xem nghi vấn → chọn kết luận → ảnh tiếp theo</strong>
   <span>Tool ưu tiên ảnh cần xem. Bạn là người xác nhận kết quả.</span></div>
@@ -25,7 +25,8 @@
     <div class="image-heading"><h2 id="image-title">Chọn một ảnh để bắt đầu</h2><span id="position"></span></div>
     <div class="legend"><label><input id="show-labels" type="checkbox" checked> <i class="label-line"></i> Nhãn đang đối chiếu</label>
       <label><input id="show-evidence" type="checkbox" checked> <i class="evidence-line"></i> Vùng nghi vấn</label>
-      <span>Nét đứt: vùng máy gợi ý để đối chiếu (nếu có)</span></div>
+      <label><input id="show-box-names" type="checkbox"> Hiện tên tất cả box</label>
+      <span>Chọn box trong danh sách để xem tên. Nét đứt: vùng máy gợi ý để đối chiếu.</span></div>
     <div id="image-stage"><img id="photo" alt="" hidden><canvas id="overlay" aria-hidden="true"></canvas>
       <p id="image-placeholder">Ảnh sẽ xuất hiện tại đây.</p></div>
     <p class="caption" id="image-caption">Nhãn hiển thị thuộc lần kiểm tra này, chưa bao gồm thay đổi vừa sửa trong CVAT.</p>

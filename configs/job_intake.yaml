@@ -9,5 +9,6 @@ profile: bbox-geometry-context-v1
 method: rule
 signals: [crowded, many_tiny, rare_class, edge_no_trunc, size_outlier,
           dup_same_class, overlap_cross_class]
+predictions_manifest: null  # Optional operator-owned cache; see docs/mvp/detector-cache.md.
 # Uses the existing pipeline/weights configs, frozen into every published manifest.
 # Detector/spec/GBM are NOT implied by this explicit partial-check profile.

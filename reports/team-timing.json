@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "kind": "team_reported_measurement",
+  "image_count": 10,
+  "same_images": true,
+  "assisted_minutes": 20,
+  "manual_minutes": 45,
+  "source": "Nhóm xác nhận trong trao đổi với Tú Anh; chưa cung cấp log gốc.",
+  "log_verified": false,
+  "protocol_verified": false,
+  "reviewer_count": null,
+  "error_count": null,
+  "recall": null,
+  "limits": [
+    "Chưa đối chiếu log hoặc kiểm soát ảnh hưởng nhớ ảnh giữa hai lượt.",
+    "Không phải pilot 30 ảnh; không suy rộng mức giảm thời gian sang batch khác.",
+    "Không gộp với baseline lỗi tiêm hoặc proxy giảm số ảnh."
+  ]
+}

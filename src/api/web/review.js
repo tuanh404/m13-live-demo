@@ -109,16 +109,20 @@ function draw() {
   function box(coords, title, color, dashed = false, width = 3) {
     ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dashed ? [10, 7] : []);
     ctx.strokeRect(coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1]);
+    if (!title) return;
     ctx.setLineDash([]); ctx.font = '18px system-ui';
     const y = Math.max(22, coords[1] - 5), x = Math.max(0, coords[0]);
     ctx.fillStyle = color; ctx.fillRect(x, y - 21, ctx.measureText(title).width + 12, 25);
     ctx.fillStyle = 'white'; ctx.fillText(title, x + 6, y - 2);
   }
   if ($('show-labels').checked) for (const lb of labels) {
-    box(lb.box, `Box ${lb.number} · ${lb.category}`, '#1667bb', false, state.selectedBox === lb.number ? 7 : 3);
+    const title = $('show-box-names').checked || state.selectedBox === lb.number
+      ? `Box ${lb.number} · ${lb.category}` : '';
+    box(lb.box, title, '#1667bb', false, state.selectedBox === lb.number ? 7 : 3);
   }
   if ($('show-evidence').checked) state.current.evidence.forEach((b, i) => {
-    box(b.box, b.secondary ? 'Detector tham chiếu' : `Nghi vấn ${i + 1}`, '#b64b08', !!b.secondary, 4);
+    const title = !b.secondary && i < 3 ? `Nghi vấn ${i + 1}` : '';
+    box(b.box, title, '#b64b08', !!b.secondary, 4);
   });
 }
 async function select(item) {
@@ -270,7 +274,7 @@ $('discard-rejected').addEventListener('click', () => {
     state.pending = null; persist(); load();
   }
 });
-$('show-labels').addEventListener('change', draw); $('show-evidence').addEventListener('change', draw);
+for (const id of ['show-labels', 'show-evidence', 'show-box-names']) $(id).addEventListener('change', draw);
 for (const button of document.querySelectorAll('[data-verdict]')) {
   button.addEventListener('click', () => verdict(button.dataset.verdict));
 }

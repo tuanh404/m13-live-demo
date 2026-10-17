@@ -123,12 +123,14 @@ def prepare(
     cvat_url=None,
     role="review",
     exclude_image_ids=None,
+    include_image_ids=None,
 ):
     cfg = config.load("review_acceptance")
     limit = limit if limit is not None else cfg["review_images"]
     if limit < 1 or purpose not in {"real", "development"} or role not in {"review", "pilot"}:
         raise ValueError("limit/purpose không hợp lệ")
     excluded = set(exclude_image_ids or ())
+    included = set(include_image_ids) if include_image_ids is not None else None
     root, output, images = source_root.resolve(), output.resolve(), images.resolve()
     source = json.loads(queue_file.with_suffix(".manifest.json").read_text())
     version = source["model_version"]
@@ -188,6 +190,8 @@ def prepare(
         "role": role,
         "excluded_image_ids": sorted(excluded),
     }
+    if included is not None:
+        identity["included_image_ids"] = sorted(included)
     if output.exists():
         record = verify(output)
         previous_identity = {"excluded_image_ids": [], **record["identity"]}
@@ -202,7 +206,11 @@ def prepare(
     source_ids = set(frame.image_id)
     if excluded - source_ids:
         raise ValueError("Batch loại trừ chứa ảnh ngoài queue nguồn; kiểm tra đúng bộ dữ liệu")
+    if included is not None and (not included or included - source_ids):
+        raise ValueError("Batch được chọn rỗng hoặc chứa ảnh ngoài queue nguồn")
     available = frame[~frame.image_id.isin(excluded)]
+    if included is not None:
+        available = available[available.image_id.isin(included)]
     if len(available) < limit:
         raise ValueError(f"Queue còn {len(available)} ảnh sau loại trừ, không đủ {limit} ảnh yêu cầu")
     from src.api.audit import make_plan, validate_plan
@@ -224,6 +232,10 @@ def prepare(
             seed=policy["audit_seed"],
         )
     )
+    # A recheck may deliberately retain an earlier review schedule. An initial
+    # release may not silently borrow a schedule from a different scorer.
+    if plan["source_model_version"] != source["model_version"]:
+        raise ValueError("Plan và scorer khác phiên bản; chuẩn bị từ queue toàn bộ nhất quán")
     selected_ids = [i for i in plan["order"] if i in set(available.image_id)][:limit]
     frame = available[available.image_id.isin(selected_ids)].sort_values("rank").copy()
     source_ranks = {i: plan["source_ranks"][i] for i in frame.image_id}
