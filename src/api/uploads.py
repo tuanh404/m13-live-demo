@@ -166,6 +166,8 @@ def parse_zip(raw, cfg):
         UnidentifiedImageError,
         Image.DecompressionBombError,
         RecursionError,
+        yaml.YAMLError,
+        NotImplementedError,
     ):
         fail("Không đọc được ZIP, ảnh hoặc nhãn. Hãy dùng cấu trúc gói mẫu và thử lại.")
 

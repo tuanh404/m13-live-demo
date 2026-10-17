@@ -309,3 +309,18 @@ def test_upload_busy_is_retryable_without_writing(upload_settings):
     finally:
         app.state.uploads.upload_gate.release()
     assert send(client, sample_zip()).status_code == 200
+
+
+def test_invalid_yaml_is_a_readable_validation_error(upload_settings):
+    with zipfile.ZipFile(io.BytesIO(sample_zip())) as z:
+        files = {n: z.read(n) for n in z.namelist() if n != "classes.txt"}
+    files["data.yaml"] = b"names: [car, truck\n"
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as z:
+        for name, raw in files.items():
+            z.writestr(name, raw)
+    client = client_for(create_app(upload_settings))
+    response = send(client, out.getvalue())
+    assert response.status_code == 422
+    assert "Không đọc được" in response.json()["detail"]
+    assert not client.get("/my-batches/list").json()["items"]
