@@ -23,6 +23,7 @@ from starlette.concurrency import run_in_threadpool
 
 from src import config, pipeline
 from src.api.saved_labels import canonical
+from src.api.yolo_import import read_yolo_zip
 from src.features import geometric, simple_signals
 
 SCOPE = (
@@ -36,42 +37,13 @@ def fail(message):
     raise HTTPException(422, message)
 
 
-def parse_zip(raw, cfg):
+def parse_zip(raw, cfg, *, provenance=None):
     from PIL import Image, UnidentifiedImageError
 
     try:
-        archive = zipfile.ZipFile(io.BytesIO(raw))
-        entries = archive.infolist()
-        if len(entries) > cfg["max_entries"] or sum(i.file_size for i in entries) > cfg["max_unpacked_bytes"]:
-            fail("ZIP có quá nhiều file hoặc vượt20MB sau giải nén.")
-        files = {}
-        for entry in entries:
-            name = entry.filename
-            path = PurePosixPath(name)
-            if (
-                path.is_absolute()
-                or ".." in path.parts
-                or "\\" in name
-                or "\x00" in name
-                or str(path) != name.rstrip("/")
-                or entry.flag_bits & 1
-                or (entry.external_attr >> 16) & 0o170000 == 0o120000
-            ):
-                fail("ZIP có đường dẫn, liên kết hoặc mã hóa không được hỗ trợ.")
-            if entry.is_dir():
-                continue
-            if name.casefold() in {n.casefold() for n in files}:
-                fail("ZIP có tên file trùng hoặc mơ hồ.")
-            allowed = (
-                name in {"classes.txt", "data.yaml"}
-                or re.fullmatch(r"images/[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.(jpg|jpeg|png)", name)
-                or re.fullmatch(r"labels/[A-Za-z0-9][A-Za-z0-9_-]{0,79}\.txt", name)
-            )
-            if not allowed:
-                fail("ZIP chỉ nhận images/*.jpg|jpeg|png, labels/*.txt và classes.txt hoặc data.yaml.")
-            files[name] = archive.read(entry)
-        if ("classes.txt" in files) == ("data.yaml" in files):
-            fail("Cần đúng một file classes.txt hoặc data.yaml để xác định tên lớp.")
+        files, source = read_yolo_zip(raw, cfg)
+        if provenance is not None:
+            provenance.update(source)
         if "classes.txt" in files:
             names = files["classes.txt"].decode("utf-8-sig").splitlines()
         else:
@@ -233,7 +205,10 @@ class Uploads:
 
     @staticmethod
     def public(record):
-        return {k: record[k] for k in ("id", "images", "created_at", "review_url", "queue_id")}
+        return {
+            **{k: record[k] for k in ("id", "images", "created_at", "review_url", "queue_id")},
+            "input_format": record.get("input_format", "YOLO Detection"),
+        }
 
     def upload(self, raw, owner):
         if not self.upload_gate.acquire(blocking=False):
@@ -252,7 +227,8 @@ class Uploads:
         old = self.store.state("upload-batch:" + key)
         if old:
             return {**self.public(old), "reused": True}
-        frames, images, hashes = parse_zip(raw, self.cfg)
+        source = {}
+        frames, images, hashes = parse_zip(raw, self.cfg, provenance=source)
         self.root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="stage-", dir=self.root) as stage:
             folder = Path(stage)
@@ -268,6 +244,7 @@ class Uploads:
                 options=self.profile["options"],
                 weights=self.profile["weights"],
                 provenance={
+                    **source,
                     "source": "user_yolo_upload",
                     "zip_sha256": hashlib.sha256(raw).hexdigest(),
                     "source_image_sha256": hashes,
@@ -287,6 +264,7 @@ class Uploads:
                 "review_session": "batch-" + key,
                 "owner": owner,
                 "images": len(frames),
+                "input_format": source["input_format"],
                 "stored_bytes": len(snapshot),
                 "created_at": datetime.now(UTC).isoformat(),
                 "review_url": f"/batches/{key}/",

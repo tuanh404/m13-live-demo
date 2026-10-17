@@ -24,7 +24,7 @@ $('upload-form').onsubmit=async event=>{
   $('upload-status').textContent='Đang tải ZIP → đọc ảnh và nhãn → tính nghi vấn và tạo hàng đợi…';
   try{
     pending=await request('/my-batches/upload',{method:'POST',headers:{'Content-Type':'application/zip'},body:file,timeoutMs:120000});
-    $('upload-status').textContent=`Đã kiểm một phần ${pending.images} ảnh. ${pending.reused?'Đã mở lại bộ có sẵn; tiến độ được giữ.':'Hàng đợi và nghi vấn đã sẵn sàng.'}`;
+    $('upload-status').textContent=`Đã nhận ${pending.input_format || "YOLO Detection"} · Kiểm một phần ${pending.images} ảnh. ${pending.reused?'Đã mở lại bộ có sẵn; tiến độ được giữ.':'Hàng đợi và nghi vấn đã sẵn sàng.'}`;
     $('uploaded-review').href=pending.review_url;$('uploaded-review').hidden=false;
     await list();
   }catch(e){$('upload-status').textContent=e.message+' Bạn có thể bấm Kiểm tra lại cùng ZIP; không tạo bộ trùng.';}

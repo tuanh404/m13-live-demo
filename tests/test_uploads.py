@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import os
@@ -182,7 +183,8 @@ def test_postgres_upload_restart_and_namespace_isolation(upload_settings, monkey
 
 
 @pytest.mark.skipif(not os.getenv("M13_WEB_BROWSER_TESTS"), reason="requires browser opt-in")
-def test_browser_upload_retry_all_verdicts_resume_and_private_list(upload_settings, tmp_path):
+@pytest.mark.parametrize("layout", ["canonical", "cvat", "ultralytics"])
+def test_browser_upload_retry_all_verdicts_resume_and_private_list(upload_settings, tmp_path, layout):
     import socket
     import threading
 
@@ -211,6 +213,10 @@ def test_browser_upload_retry_all_verdicts_resume_and_private_list(upload_settin
                 page.get_by_role("link", name="Tải gói mẫu3ảnh để thử ngay").click()
             archive = tmp_path / "sample.zip"
             download.value.save_as(archive)
+            if layout != "canonical":
+                from test_yolo_import import repack_yolo
+
+                archive.write_bytes(repack_yolo(archive.read_bytes(), layout, "export/"))
             page.locator("#archive").set_input_files(archive)
 
             def lost_ack(route):
@@ -324,3 +330,35 @@ def test_invalid_yaml_is_a_readable_validation_error(upload_settings):
     assert response.status_code == 422
     assert "Không đọc được" in response.json()["detail"]
     assert not client.get("/my-batches/list").json()["items"]
+
+
+def test_cvat_auto_import_persists_source_mapping_without_changing_existing_batches(upload_settings):
+    from test_yolo_import import repack_yolo
+
+    app = create_app(upload_settings)
+    client = client_for(app)
+    original = sample_zip()
+    previous = send(client, original).json()
+    assets_before = app.state.store.state("upload-assets:" + previous["id"])
+    # Pre-upgrade records did not have input_format; they must still be readable/retryable.
+    old_record = app.state.store.state("upload-batch:" + previous["id"])
+    del old_record["input_format"]
+    app.state.store.state("upload-batch:" + previous["id"], old_record)
+    raw = repack_yolo(original, "cvat", "export/")
+    response = send(client, raw)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["input_format"] == "CVAT YOLO1.1"
+    assets = app.state.store.state("upload-assets:" + result["id"])
+    manifest_name = next(n for n in assets if n.endswith(".manifest.json"))
+    manifest = json.loads(base64.b64decode(assets[manifest_name]))
+    source = manifest["provenance"]
+    assert source["input_format"] == "CVAT YOLO1.1"
+    assert source["source_files"]["clean"] == {
+        "image": "export/obj_train_data/clean.jpg", "label": "export/obj_train_data/clean.txt",
+    }
+    assert len(source["source_image_sha256"]) == 3
+    assert send(client, raw).json()["id"] == result["id"]
+    assert send(client, original).json()["id"] == previous["id"]
+    assert app.state.store.state("upload-assets:" + previous["id"]) == assets_before
+    assert len(client.get("/my-batches/list").json()["items"]) == 2

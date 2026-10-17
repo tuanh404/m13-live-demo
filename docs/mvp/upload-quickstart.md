@@ -6,11 +6,22 @@
 4. Bấm **Review bộ vừa kiểm**, đối chiếu ảnh/nhãn/nghi vấn và chọn ba kết luận.
 5. Mở **Bộ ảnh của tôi** để tiếp tục, reload/restart không mất kết quả.
 
-ZIP tối đa5MB,1–10ảnh JPG/PNG1280×720; mỗi ảnh có labels/cùng-tên.txt. File rỗng nghĩa là không box.
-Cần classes.txt(mỗi dòng một lớp) hoặc data.yaml(names dạng list hoặc dict0..N-1).
-Tên file chỉ chữ Latin/số/gạch ngang/gạch dưới. Tối đa500box/ảnh,5bộ/phiên; toàn kho100MB.
-Nhận10lớp BDD, alias person/motor/bike được chuẩn hóa. YOLO polygon/class không hỗ trợ bị từ chối.
+ZIP tối đa5MB,1–10ảnh JPG/PNG1280×720; mỗi ảnh cần một nhãn YOLO bbox .txt tương ứng.
+**Tự nhận trực tiếp, không cần sắp lại ZIP:**
+
+- CVAT YOLO1.1: obj.names + obj_train_data/ (hoặc obj_valid_data/) chứa ảnh/nhãn;
+  obj.data, train.txt và valid.txt được nhận nhưng không dùng để đọc URL/đường dẫn ngoài ZIP.
+- YOLO Detection/Ultralytics: images/ + labels/ + classes.txt hoặc data.yaml/data.yml (names).
+  Nhận images/train/ + labels/train/, train/images/ + train/labels/ và val/valid/test tương tự.
+- Nhận một thư mục bọc ngoài; ảnh đuôi viết hoa và tên Unicode/khoảng trắng được chuẩn hóa ID nội bộ,
+  giữ tên/đường dẫn gốc và hash trong provenance. Không tự sắp xếp lại chỉ số lớp.
+
+ZIP chỉ có nhãn được báo thiếu ảnh cụ thể; tool không khôi phục được ảnh gốc từ nhãn.
+COCO JSON, CVAT XML, VOC, polygon/segmentation/OBB chưa được nhận. Không phải ZIP nào cũng là YOLO.
+Lớp trùng/mơ hồ, tên ảnh trùng giữa split và ảnh/nhãn không ghép đủ đều bị từ chối, không tự bỏ dữ liệu.
+Tối đa500box/ảnh,5bộ/phiên; toàn kho100MB. Nhận10lớp BDD, alias person/motor/bike được chuẩn hóa.
 Không tự resize tọa độ; ảnh được xuất JPEG cùng kích thước, provenance giữ hash nguồn và bản đã chuẩn hóa.
+Định dạng gốc/phiên bản importer và bảng ghép ảnh–nhãn cũng lưu trong snapshot; batch cũ không đổi.
 
 **Kiểm một phần:** dup_same_class, overlap_cross_class, size_outlier, crowded, many_tiny, rare_class.
 Ngưỡng/trọng số lấy code/config có sẵn và freeze trong snapshot; không chạy edge_no_trunc vì YOLO thiếu
