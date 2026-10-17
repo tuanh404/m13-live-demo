@@ -217,6 +217,11 @@ def test_new_release_preserves_previous_snapshot_stats_session_and_lost_ack(
     history = restarted.get('/stats', params={**params, 'queue_id': queue['queue_id']}).json()
     assert history['review_events'] == 1
     assert restarted.post('/verdict', json=payload, headers=headers).json()['duplicate'] is True
+    # Restart again on the SAME ephemeral disk, not just an empty directory.
+    again = TestClient(create_render_app(), base_url='https://demo.example.test')
+    again.cookies.update(client.cookies)
+    assert again.get('/stats', params={**params, 'queue_id': queue['queue_id']}).json()['review_events'] == 1
+    assert again.post('/verdict', json=payload, headers=headers).json()['duplicate'] is True
 
 
 @pytest.mark.skipif(not os.getenv('M13_TEST_DATABASE_URL'), reason='real PostgreSQL required')

@@ -87,7 +87,10 @@ def create_render_app():
         for previous in previous_ids:
             if previous == bundle:
                 continue
-            history = artifacts.parent / ("history-" + previous)
+            # hydrate derives local manifest paths. A process restart must not
+            # compare those rewritten runtime paths with the original raw blob.
+            # The current hydrate root is fresh on every boot; history follows it.
+            history = artifacts / "history" / previous
             old = hydrate(previous, history)
             versions[old["version"]] = {
                 "queue_id": old["queue_sha256"],
