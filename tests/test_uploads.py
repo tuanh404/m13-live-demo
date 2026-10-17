@@ -297,3 +297,15 @@ def test_rejects_inflated_zip_and_wrong_dimensions():
     with pytest.raises(HTTPException) as error:
         parse_zip(out.getvalue(), cfg)
     assert "1280" in error.value.detail
+
+
+def test_upload_busy_is_retryable_without_writing(upload_settings):
+    app = create_app(upload_settings)
+    client = client_for(app)
+    app.state.uploads.upload_gate.acquire()
+    try:
+        assert send(client, sample_zip()).status_code == 429
+        assert not client.get("/my-batches/list").json()["items"]
+    finally:
+        app.state.uploads.upload_gate.release()
+    assert send(client, sample_zip()).status_code == 200

@@ -201,6 +201,7 @@ class Uploads:
         self.cfg = config.load("upload")
         self.root = Path(tempfile.mkdtemp(prefix="m13-uploads-"))
         self.lock = threading.Lock()
+        self.upload_gate = threading.Lock()
         self.apps = {}
         options = copy.deepcopy(config.load("pipeline"))
         defaults = {**geometric.DEFAULTS, **simple_signals.DEFAULTS}
@@ -233,6 +234,14 @@ class Uploads:
         return {k: record[k] for k in ("id", "images", "created_at", "review_url", "queue_id")}
 
     def upload(self, raw, owner):
+        if not self.upload_gate.acquire(blocking=False):
+            raise HTTPException(429, "Đang kiểm một bộ ảnh khác. Hãy thử lại sau vài giây.")
+        try:
+            return self._upload(raw, owner)
+        finally:
+            self.upload_gate.release()
+
+    def _upload(self, raw, owner):
         if len(raw) > self.cfg["max_zip_bytes"]:
             raise HTTPException(413, "Gói ZIP vượt5MB.")
         key = hashlib.sha256(
