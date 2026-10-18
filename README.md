@@ -1,161 +1,66 @@
-# M13 Reviewer Prioritization
+# M13 — Reviewer Prioritization Assistant
 
+**Trợ lý ưu tiên kiểm tra nhãn ảnh 2D, giúp QC tập trung vào những ảnh có nguy cơ sai cao.**
 
-**Mã nguồn dự án:** [tuanh404/m13-live-demo](https://github.com/tuanh404/m13-live-demo) · nhánh mặc định `deploy/render-free`.
+Dự án thuộc chủ đề **Annotation & QC**, sử dụng dữ liệu **BDD100K**. Hệ thống tạo hàng đợi review theo điểm rủi ro, kèm ảnh, nhãn và lý do nghi vấn để người dùng xác nhận.
 
-**Trải nghiệm:** [Web live](https://m13-live-demo.onrender.com/login) · [Video125giây / slides12trang / thumbnail](https://m13-live-demo.onrender.com/submission).
+## Trải nghiệm và hồ sơ dự án
 
-Bản source này gồm backend, web, extension, công cụ dữ liệu/guideline/scoring/evaluation, cấu hình,
-test và tài liệu. Dữ liệu ảnh/model, DB, phiên review, credentials và môi trường máy cá nhân được giữ ngoài Git.
-Các ghi chú “private/local” trong nhật ký release17/10 bên dưới mô tả trạng thái trước khi công khai source18/10.
-Repo nhóm không bị push/merge trong bước bàn giao này.
+| Hạng mục | Liên kết |
+|---|---|
+| **MVP Live** | [Trải nghiệm sản phẩm](https://m13-live-demo.onrender.com/login) |
+| **Source code** | [GitHub công khai](https://github.com/tuanh404/m13-live-demo) |
+| **Video demo — 2 phút 05 giây** | [Xem video][video] |
+| **Pitch Deck — 12 trang** | [Xem slides PDF][slides] |
+| **Thumbnail** | [Ảnh đại diện dự án][thumbnail] |
+| **Sơ đồ kiến trúc** | [Architecture diagram](docs/mvp/architecture.svg) |
+| **Đặc tả và thiết kế** | [Spec & Design](docs/mvp/spec-design.md) |
+| **Tài liệu kiểm thử** | [Testing](docs/mvp/testing.md) |
+| **Nhật ký tuần** | [16/10](reports/weekly-mvp-2026-10-16.md) · [17/10](reports/weekly-mvp-2026-10-17.md) · [18/10](reports/weekly-mvp-2026-10-18.md) |
 
-Trợ lý ưu tiên review nhãn detection 2D trên BDD100K. Thay vì QC review đều 100% ảnh, hệ thống chấm điểm rủi ro sai nhãn cho từng ảnh và xếp hàng đợi review, mỗi ảnh kèm 3 lý do tiếng Việt.
+Slides trình bày bài toán, giải pháp, kiến trúc, kết quả đánh giá, tính khả thi và định hướng phát triển.
 
-**Web demo cập nhật18/10:** https://m13-live-demo.onrender.com → **Trải nghiệm demo**.
-Không cần extension/CVAT trên máy người xem. Dùng10ảnh BDD thật, queue/predictions đã đóng băng;
-không phải inference/Gemini online hoặc pilot người thật. CVAT Save/recheck public chưa có.
-**Hồ sơ mới:** [Video2phút05giây, slides12trang và thumbnail](https://m13-live-demo.onrender.com/submission).
-Có luồng tải ZIPYOLO mới; [hướng dẫn](docs/mvp/upload-quickstart.md).
-Render Free có thể cần khoảng1phút để thức dậy sau khi ngủ. Xem [triển khai và giới hạn](docs/deploy-mvp.md).
+## Chức năng chính
 
-- **Dữ liệu:** BDD100K tập val, 10k ảnh, nhãn detection 2D
-- **Chỉ số chính:** recall lỗi trong top 20% ảnh; thời gian review tiết kiệm
-- **Nhóm:** Hoàng Mạnh Cường (lead), Long (BA), Tú Anh (BE), Sơn (BE)
+- **Trải nghiệm demo:** review 10 ảnh BDD với hàng đợi và kết quả kiểm tra đã chuẩn bị.
+- **Kiểm tra bộ ảnh của tôi:** tải ZIP ảnh và nhãn YOLO, chạy các phép kiểm được hỗ trợ và tạo hàng đợi riêng.
+- **Review có giải thích:** xem ảnh, box, điểm rủi ro và lý do từng nghi vấn.
+- **Lưu kết luận:** chọn **Lỗi thật / Bot nhầm / Bỏ qua**, chuyển ảnh tiếp theo và xem thống kê.
+- **Tiếp tục sau reload:** giữ tiến độ trong phiên sử dụng.
 
-**Tiến độ (cập nhật 13/10 tối):** [ai đã xong gì, ai làm tiếp, kết quả hiện có](docs/tien-do.md).
+## Cách thử nhanh
 
-**Dành cho cả người không chuyên kỹ thuật:** [Hướng dẫn 10 việc cần làm: ai làm, làm thế nào, giao gì và khi nào tính là xong](docs/huong-dan-cong-viec-de-hieu.md).
+1. Mở **MVP Live**.
+2. Chọn **Trải nghiệm demo**, hoặc **Kiểm tra bộ ảnh của tôi**.
+3. Với bộ ảnh riêng, tải gói mẫu trên giao diện hoặc ZIP YOLO có cả ảnh và nhãn.
+4. Xem nghi vấn và chọn kết luận cho từng ảnh.
+5. Mở thống kê để xem kết quả review.
 
-**Cập nhật 13/10:** [Phân tích đề tài, hiện trạng các nhánh và phân công tiếp theo](docs/phan-tich-va-phan-cong-13-10.md) — gồm 4 sơ đồ SVG để chia sẻ với nhóm; ghi nhận phần API, CVAT, extension và guideline tools Tú Anh đã viết.
+**Không cần cài extension hoặc CVAT để thử web public.**
 
-**Xem hệ thống qua một ví dụ cụ thể:** [Ảnh + guideline → LLM trích luật → detector/rule kiểm nhãn → hàng đợi review](docs/vi-du-xuyen-suot.md), có hai hình minh họa đầu vào và kết quả từng bước.
+## Phạm vi và giới hạn
 
-## Thử bộ ảnh của bạn ·18/10/2026
+- Upload hỗ trợ YOLO Detection 2D từ CVAT YOLO 1.1 hoặc Ultralytics: tối đa **10 ảnh JPG/PNG, 1280×720, ZIP 5 MB**, thuộc các lớp BDD được hỗ trợ.
+- Bộ ảnh tải lên được **kiểm một phần** bằng các phép kiểm hình học/ngữ cảnh; chưa chạy detector hoặc Gemini trực tiếp trên ảnh mới.
+- Điểm thể hiện **mức rủi ro để ưu tiên review**. Điểm 0 không bảo đảm nhãn đúng; nghi vấn cần người xác nhận.
+- Kết luận review không tự sửa hoặc lưu nhãn trong CVAT.
+- Demo BDD dùng predictions đã lưu; tích hợp CVAT local được trình bày riêng trong [phạm vi hỗ trợ](docs/mvp/support-matrix.md).
+- Render Free có thể ngủ khi không sử dụng; lần mở đầu cần chờ dịch vụ khởi động.
 
-Mở [màn bắt đầu](https://m13-live-demo.onrender.com/login) → **Kiểm tra bộ ảnh của tôi**.
-Tải gói mẫu ngay trên trang hoặc nhập nguyên ZIP YOLO1.1 từ CVAT/Ultralytics Detection;
-không cần sắp lại thư mục. Tối đa10ảnh1280×720, ZIP5MB; cần có cả ảnh và nhãn.
-Chạy6phép kiểm hình học/ngữ cảnh, không detector/guideline; điểm0 không bảo đảm đúng.
-Bộ ảnh và verdict giữ riêng trong phiên login; reload/restart giữ tiến độ.
-[Hướng dẫn và giới hạn](docs/mvp/upload-quickstart.md). CI bản upload316passed1skip;
-source/runtime hiện ởrepo deploy riêng, không push/merge repo nhóm.
+## Kiểm thử và phát triển
 
-## Bộ bàn giao MVP · cập nhật 17/10/2026
+Bản source công khai đã qua CI: **316 test đạt, 1 bỏ qua**, Ruff và repo checker đạt.
 
-[Video · Slides · Thumbnail công khai](https://m13-live-demo.onrender.com/submission).
-Runtime 275330c, CI các bước đạt, workflow GitHub còn pending; local279passed1skipped.
-Màn bắt đầu mới có CTA rõ, hỗ trợ laptop/mobile; menu chỉ hiện chức năng đang khả dụng.
-Source bản mới: data/mvp-submission/M13-source-final.zip hoặc repo deploy private;
-repo nhóm chưa chứa diff phát hành này. Chưa nộp BTC.
+Xem [hướng dẫn chạy](docs/mvp/quickstart.md), [hướng dẫn upload](docs/mvp/upload-quickstart.md) và [quy trình đóng góp](CONTRIBUTING.md).
 
-- [Hướng dẫn sử dụng](docs/mvp/quickstart.md) · [Phạm vi hỗ trợ](docs/mvp/support-matrix.md).
-- [Kiến trúc hiện tại](docs/mvp/architecture.svg) · [Đặc tả/thiết kế](docs/mvp/spec-design.md).
-- [Kiểm thử và ma trận nghiệm thu](docs/mvp/testing.md) · [Trạng thái13nhóm](docs/mvp/acceptance-status.md).
-- [Pitch deck12slide mở bằng browser](docs/mvp/pitch.html) · [Nguồn thumbnail](docs/mvp/thumbnail.svg).
-- [Kịch bản/video](docs/mvp/video-script.md) · [Nhật ký phiên16/10](reports/weekly-mvp-2026-10-16.md).
-- PDF, PNG, MP4, source ZIP và submission manifest: `data/mvp-submission/` trên máy triển khai.
-  Source ZIP là local/private; PDF/PNG/MP4 có đường chia sẻ `/submission` khi đã publish. Chưa nộp BTC. Không commit dữ liệu/video/DB/secrets.
+Hướng phát triển: bổ sung detector cho ảnh mới, mở rộng định dạng nhập, triển khai CVAT có quyền truy cập và đánh giá thời gian review bằng pilot có log đầy đủ.
 
-Web public đã kiểm tại **https://m13-live-demo.onrender.com**. Repo nhóm public;
-repo deploy riêng `tuanh404/m13-live-demo` giữ private. Bản sửa được phát hành riêng;
-không commit/push repo nhóm. Commit/CI/live thực được ghi trong checkpoint bàn giao.
-Không cần extension cho web public. Local intake hỗ trợ bbox1280×720/classes BDD, operator cấp quyền
-server/task một lần; reviewer chỉ bấm nút. Chưa có public upload ảnh/nhãn mới hoặc CVAT public.
+## Nhóm thực hiện
 
-Baseline tái lập:2.000ảnh test/seed42, lỗi tiêm; recall@20% theo ảnh27,67%, random20,15%,
-weighted30,99%. [Số liệu và provenance](reports/mvp-evaluation-summary.json).
-Không phải recall lỗi thật hoặc time_saved đã kiểm log; pilot30×2reviewer còn chờ.
-[Kết quả thời gian nhóm cung cấp](reports/team-timing.json) được trình bày riêng ở `/results`.
-Hồ sơ video/slides/thumbnail công khai sau khi publish tại `/submission`; source mới giữ private/local.
-Release demo mới lấy score/rank/evidence và audit plan từ cùng queue rule-mvp-original-v1
-10.000 ảnh; giữ đúng 10 ảnh demo cũ. Audit chèn xen kẽ nên không phải mọi ảnh giảm dần theo điểm.
-Recheck giữ lịch review gốc và tạo snapshot mới, không sửa baseline cũ.
-Ảnh/nhãn BDD100K ©2018 The Regents of the University of California, dùng demo giáo dục/nghiên cứu;
-[giấy phép](deployment/render/BDD100K-LICENSE.txt), provenance mirror/hash trong bundle ngoài Git.
+Hoàng Mạnh Cường · Long · Tú Anh · Sơn
 
-Phần bắt đầu và sơ đồ đề xuất cũ bên dưới được giữ để tham khảo source nhóm;
-để thử bản MVP hiện tại, ưu tiên quickstart/architecture ở trên.
+Dữ liệu BDD100K được sử dụng theo [giấy phép](deployment/render/BDD100K-LICENSE.txt). Credentials, database riêng và dữ liệu runtime không được đưa vào mã nguồn công khai.
 
-## Bắt đầu
-
-```bash
-uv venv --python 3.11 && source .venv/bin/activate
-uv pip install -e ".[dev]"
-pytest -q && ruff check .
-```
-
-Thành viên mới: đọc [CONTRIBUTING.md](CONTRIBUTING.md) để biết luồng, phân công, quy ước ghép code và quy trình hằng ngày.
-
-## Thử web review local, không cần extension
-
-Sau bước cài đặt, cài thêm Pillow và tạo batch tổng hợp riêng (không tải BDD hay gọi detector):
-
-```bash
-uv pip install -e '.[demo]'
-python -m src.cli review-fixtures --scored --count 10 --out data/web-demo
-source data/web-demo/review/runtime.env
-python -m src.cli serve --port 8000
-```
-
-Mở **http://127.0.0.1:8000/**: xem ảnh, nhãn snapshot và nghi vấn → chọn **Lỗi thật / Bot nhầm / Bỏ qua** (phím **1/2/3**) → ảnh tiếp → thống kê. Không cần CVAT, URL API hay key để thử luồng này. SQLite giữ lịch sử sau khi khởi động lại; trình duyệt giữ phiên review. Nút tạo lượt demo mới nằm trong thông tin nâng cao, không xóa lịch sử.
-
-Đây là **fixture**, chỉ kiểm `edge_no_trunc`, không chứng minh box bám đúng vật thể. Điểm 0–100 là mức rủi ro để ưu tiên, không phải xác suất sai; 0 không bảo đảm nhãn đúng. Cảnh báo detector cũng cần người xác nhận. **Lỗi thật**: người review xác nhận lỗi; **Bot nhầm**: đã đối chiếu và không xác nhận nghi vấn; **Bỏ qua**: chưa đủ thông tin, không tính vào mẫu số tỷ lệ lỗi. Verdict không tự sửa nhãn. Nhãn và evidence được đọc từ snapshot kiểm hash của queue, không lấy nhãn CVAT đang chỉnh.
-
-Lệnh trên tạo URL local riêng; bản public ở link đầu README. Số đo tự thử/fixture không phải pilot người thật; `time_saved` trong đánh giá offline là proxy, chưa phải thời gian tiết kiệm đã đo.
-
-Đã có mục **Sửa trong CVAT & kiểm tra lại nhãn đã Save** trên web: kiểm kết nối →
-mở đúng task/job/frame → sửa và **Save trong CVAT** → quay về đọc nhãn đã lưu → kiểm
-tra lại. Điểm/overlay chỉ đổi sau khi scorer chạy thành công trên nhãn mới; có lịch
-sử trước/sau, queue cũ giữ nguyên. Nếu CVAT chưa sẵn sàng, vẫn xem ảnh và ghi verdict
-trên web; không cung cấp link CVAT localhost cho URL web public. Backend API cần
-CVAT_USER/CVAT_PASSWORD trong môi trường riêng cho luồng này, không nhập key lên web.
-Đồng hồ web chỉ đo phần xem web có focus, không đo thời gian sửa trong CVAT.
-
-Audit dùng5% phần ngoài top20%, seed42; freeze trên queue gốc trước khi cắt demo,
-giữ rank nguồn và policy riêng. Với10k ảnh:2000top +400audit, tổng24%, không phải ngân
-sách20%. Xem [định nghĩa và lệnh export](docs/dinh-nghia-audit.md).
-
-## Baseline và pilot (L04)
-
-Trang **`/results`** đọc `M13_EVALUATION_FILE` do backend cấu hình (file `evaluation.json`
-từ `baseline-replay`), không yêu cầu người dùng nhập đường dẫn. Bảng/gain curve cùng split,
-đáp án và hash; lỗi tiêm tách khỏi lỗi QC thật, proxy số ảnh tách khỏi thời gian đo từ người thật.
-CLI `baseline-replay --help` kiểm nguồn nhãn/đáp án/artifacts trước khi đánh giá; không chạy
-detector/training hoặc chọn tham số trên test. `review-acceptance --help` tạo checklist đầu vào,
-không tự nhận có đủ file là đã nghiệm thu10ảnh BDD.
-
-Trang **`/pilot`** là quy trình người thật tự đăng ký, giữ đúng arm/phiên/thứ tự và gửi phản hồi.
-Ảnh pilot không xem được trước đăng ký; fixture không được đăng ký thành human pilot.
-Xem [hướng dẫn pilot30ảnh](docs/pilot-30.md) cho operator và hai reviewer. Hiện chưa có dữ liệu
-pilot người thật. Nhóm cung cấp kết quả cùng 10 ảnh: assisted20phút/manual45phút,
-mức giảm tính từ hai số này55,6%; chưa đối chiếu log, không phải pilot30ảnh.
-
-## Chạy pipeline
-
-```bash
-python -m src.cli load                                    # 1. đọc nhãn BDD100K
-python -m src.cli inject                                  # 2. tiêm lỗi có đáp án
-python -m src.cli rank --version rule-v0                  # 3–4. queue + evidence + manifest (thêm --preds/--spec khi có)
-python -m src.cli evaluate --queue reports/ranked_queue_rule-v0.csv   # 7. so file order/random, gain curve
-uvicorn src.api.main:app --reload                         # 5. API cho giao diện review
-```
-
-## Cấu trúc
-
-```
-configs/          tham số: paths, injection, weights, learning, class_map, batches, guidelines/
-src/data/         loader BDD100K, tiêm lỗi
-src/features/     tín hiệu rủi ro (hình học, detector, guideline) + SignalResult
-src/guideline/    LLM đọc guideline -> spec YAML
-src/scoring/      chấm điểm rule, GBM, học lại
-src/eval/         metric, ghi reports/results.jsonl
-src/api/          FastAPI hàng đợi + verdict
-src/cli.py        điểm vào duy nhất
-extension/        Chrome extension (side panel trong CVAT)
-tests/            test + fixtures nhỏ, chạy không cần dữ liệu thật
-docs/             đề xuất, tóm tắt dự án
-reports/          báo cáo tuần, kết quả đánh giá
-```
-
-Dữ liệu, ảnh và model không đưa vào git; chia sẻ qua Drive.
+[video]: https://m13-live-demo.onrender.com/submission/assets/e3aaccc7c5d6ac83c4c1c6cf25ee1c2eac2a3a40ca9c2f3d3066f509935d147a/M13-demo.mp4
+[slides]: https://m13-live-demo.onrender.com/submission/assets/e3aaccc7c5d6ac83c4c1c6cf25ee1c2eac2a3a40ca9c2f3d3066f509935d147a/pitch.pdf
+[thumbnail]: https://m13-live-demo.onrender.com/submission/assets/e3aaccc7c5d6ac83c4c1c6cf25ee1c2eac2a3a40ca9c2f3d3066f509935d147a/thumbnail.png
