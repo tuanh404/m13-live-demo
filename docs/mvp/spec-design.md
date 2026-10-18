@@ -8,7 +8,7 @@ xác nhận; tool không tự kết luận, tự sửa annotation hoặc coi ver
 
 | Đường chạy | Đầu vào | Người dùng làm gì | Khả năng hiện tại |
 |---|---|---|---|
-| Public Render |10BDD thật, nhãn/predictions/queue đã freeze | Trải nghiệm demo → đối chiếu →3verdict → stats | Không extension/CVAT, không upload batch mới |
+| Public Render |10BDD thật đã freeze hoặc ZIP YOLO của người dùng | Demo/upload → queue riêng → đối chiếu →3verdict → stats | Không cần extension/CVAT; upload mới chỉ6geometry/context checks, không detector/guideline |
 | Local CVAT | Task/job được operator cấp quyền; bbox1280×720, classes BDD | Mở job → biểu tượng Chrome → Kiểm tra job này → queue |7checks hình học/ngữ cảnh, báo kiểm một phần |
 
 Ảnh BDD demo có provenance mirror/revision/LFS SHA256, chưa đối chiếu checksum ảnh chính thức.
@@ -105,3 +105,12 @@ hoặc ngoại suy thành30ảnh đã đo. Endpoint/trang kết quả tách kh�
 được publish qua operator backend vào Postgres hiện có, hash/bundle immutable. Source/secrets/DB không
 được phục vụ. Đường dẫn không cho đọc file tùy ý; tên ngoài whitelist404; không có API publish public.
 Public assets không mở quyền queue/intake/admin. Chưa đăng nhập vẫn bị chặn các API review.
+
+
+## Upload bổ sung18/10
+
+/my-batches nhận ZIPYOLO bbox1–10ảnh1280×720, tối đa5MB. Tự nhận layout CVATYOLO1.1/Ultralytics,
+không theo URL/đường dẫn ngoài trong metadata. Validate trước publish; source/hash/mapping được giữ.
+Snapshots/ảnh/queue/evidence nằm trong PostgreSQL state; /tmp chỉ cache. Verdict append-only và phiên
+review riêng từng batch; retry cùng ZIP/profile/login không nhân đôi. Quyền theo login reviewer12giờ,
+đăng xuất/hết hạn không mở lại bộ cũ bằng phiên mới. Xem upload-quickstart.md và src/api/yolo_import.py.

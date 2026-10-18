@@ -1,10 +1,22 @@
 # M13 Reviewer Prioritization
 
+
+**Mã nguồn dự án:** [tuanh404/m13-live-demo](https://github.com/tuanh404/m13-live-demo) · nhánh mặc định `deploy/render-free`.
+
+**Trải nghiệm:** [Web live](https://m13-live-demo.onrender.com/login) · [Video125giây / slides12trang / thumbnail](https://m13-live-demo.onrender.com/submission).
+
+Bản source này gồm backend, web, extension, công cụ dữ liệu/guideline/scoring/evaluation, cấu hình,
+test và tài liệu. Dữ liệu ảnh/model, DB, phiên review, credentials và môi trường máy cá nhân được giữ ngoài Git.
+Các ghi chú “private/local” trong nhật ký release17/10 bên dưới mô tả trạng thái trước khi công khai source18/10.
+Repo nhóm không bị push/merge trong bước bàn giao này.
+
 Trợ lý ưu tiên review nhãn detection 2D trên BDD100K. Thay vì QC review đều 100% ảnh, hệ thống chấm điểm rủi ro sai nhãn cho từng ảnh và xếp hàng đợi review, mỗi ảnh kèm 3 lý do tiếng Việt.
 
-**Web demo đã kiểm 16/10:** https://m13-live-demo.onrender.com → **Trải nghiệm demo**.
+**Web demo cập nhật18/10:** https://m13-live-demo.onrender.com → **Trải nghiệm demo**.
 Không cần extension/CVAT trên máy người xem. Dùng10ảnh BDD thật, queue/predictions đã đóng băng;
 không phải inference/Gemini online hoặc pilot người thật. CVAT Save/recheck public chưa có.
+**Hồ sơ mới:** [Video2phút05giây, slides12trang và thumbnail](https://m13-live-demo.onrender.com/submission).
+Có luồng tải ZIPYOLO mới; [hướng dẫn](docs/mvp/upload-quickstart.md).
 Render Free có thể cần khoảng1phút để thức dậy sau khi ngủ. Xem [triển khai và giới hạn](docs/deploy-mvp.md).
 
 - **Dữ liệu:** BDD100K tập val, 10k ảnh, nhãn detection 2D
@@ -19,7 +31,23 @@ Render Free có thể cần khoảng1phút để thức dậy sau khi ngủ. Xem
 
 **Xem hệ thống qua một ví dụ cụ thể:** [Ảnh + guideline → LLM trích luật → detector/rule kiểm nhãn → hàng đợi review](docs/vi-du-xuyen-suot.md), có hai hình minh họa đầu vào và kết quả từng bước.
 
+## Thử bộ ảnh của bạn ·18/10/2026
+
+Mở [màn bắt đầu](https://m13-live-demo.onrender.com/login) → **Kiểm tra bộ ảnh của tôi**.
+Tải gói mẫu ngay trên trang hoặc nhập nguyên ZIP YOLO1.1 từ CVAT/Ultralytics Detection;
+không cần sắp lại thư mục. Tối đa10ảnh1280×720, ZIP5MB; cần có cả ảnh và nhãn.
+Chạy6phép kiểm hình học/ngữ cảnh, không detector/guideline; điểm0 không bảo đảm đúng.
+Bộ ảnh và verdict giữ riêng trong phiên login; reload/restart giữ tiến độ.
+[Hướng dẫn và giới hạn](docs/mvp/upload-quickstart.md). CI bản upload316passed1skip;
+source/runtime hiện ởrepo deploy riêng, không push/merge repo nhóm.
+
 ## Bộ bàn giao MVP · cập nhật 17/10/2026
+
+[Video · Slides · Thumbnail công khai](https://m13-live-demo.onrender.com/submission).
+Runtime 275330c, CI các bước đạt, workflow GitHub còn pending; local279passed1skipped.
+Màn bắt đầu mới có CTA rõ, hỗ trợ laptop/mobile; menu chỉ hiện chức năng đang khả dụng.
+Source bản mới: data/mvp-submission/M13-source-final.zip hoặc repo deploy private;
+repo nhóm chưa chứa diff phát hành này. Chưa nộp BTC.
 
 - [Hướng dẫn sử dụng](docs/mvp/quickstart.md) · [Phạm vi hỗ trợ](docs/mvp/support-matrix.md).
 - [Kiến trúc hiện tại](docs/mvp/architecture.svg) · [Đặc tả/thiết kế](docs/mvp/spec-design.md).

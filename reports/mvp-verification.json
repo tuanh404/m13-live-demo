@@ -1,12 +1,12 @@
 {
-  "checked_at": "2026-10-17T20:55:47.199552+07:00",
+  "checked_at": "2026-10-18T07:16:50.500659+07:00",
   "base_commit": "72b1e4c05f37969f0806746862a7657d585502ce",
   "branch": "feat/tuanh-mvp-live-rebuild",
   "uncommitted_working_tree": true,
-  "pytest_passed": 276,
+  "pytest_passed": 316,
   "pytest_skipped": 1,
-  "pytest_seconds": 133.91,
-  "pytest_log_sha256": "8603ac63e5c998e36de6c11d07eee409187f99dc419475de315573efe0c3f592",
+  "pytest_seconds": 156.61,
+  "pytest_log_sha256": "c3fb036c4fe126fb56442af792a946c9f151c212be099ec4eb1cb5b8ca21c081",
   "opt_in": [
     "M13_BROWSER_TESTS",
     "M13_WEB_BROWSER_TESTS",
@@ -20,8 +20,27 @@
   "annotations": "synthetic test boxes on real BDD photos",
   "human_pilot": false,
   "usability_with_new_person": "not_evaluated",
-  "public_deploy_commit": null,
-  "remote_ci": null,
-  "L06_changes_deployed": false,
-  "team_timing": "10 images,20/45 minutes, team-reported; logs not verified"
+  "public_deploy_commit": "c94265bca19a3b6fa7b20327dc3ab15f7a30095e",
+  "remote_ci": "https://github.com/tuanh404/m13-live-demo/actions/runs/39057818496",
+  "remote_ci_conclusion": "success",
+  "remote_ci_workflow_status": "completed",
+  "L06_changes_deployed": true,
+  "team_timing": "10 images,20/45 minutes, team-reported; logs not verified",
+  "backend_test_commit": "c94265bca19a3b6fa7b20327dc3ab15f7a30095e",
+  "media_checks": {
+    "video_duration_seconds": 125.16,
+    "dimensions": [
+      1600,
+      900
+    ],
+    "full_decode": "passed",
+    "caption_position": "separate bottom band",
+    "slides": 12,
+    "pdf_bytes": 1911232,
+    "video_bytes": 3320312,
+    "recorded_runtime": "c94265bca19a3b6fa7b20327dc3ab15f7a30095e",
+    "fixture_upload": true,
+    "human_pilot": false,
+    "source_editable_zip": "data/mvp-submission/M13-slides-editable.zip"
+  }
 }

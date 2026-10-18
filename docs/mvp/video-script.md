@@ -1,45 +1,33 @@
-# Video M13 · tối đa180giây
+# Video M13 · bản cập nhật web + ZIP YOLO
 
-Đầu ra: `data/mvp-submission/M13-demo.mp4`, phụ đề `demo.srt`, thời điểm từng cảnh và
-thời lượng ghi thật trong `video-record.json`. Bản này quay browser thật có phụ đề tiếng Việt,
-chưa có giọng thu của người; bản publish ở /submission sau kiểm hash. Không phải video pilot người thật.
+Đầu ra: `data/mvp-submission/M13-demo.mp4` (≤180giây,1600×900), `demo.srt` và `video-record.json`.
+Quay thao tác browser thật trên public live bằng phiên tự động riêng; không dùng làm số liệu pilot.
+Tiêu đề và phụ đề nằm trong dải140px bên dưới, không đè lên ảnh/nút giao diện. Không có giọng người thu.
 
-## Shot list và lời dẫn
-
-| Khoảng dự kiến | Cảnh chạy thật | Lời dẫn/ý phụ đề |
+| Cảnh | Nội dung chạy thật | Ý chính ở dưới video |
 |---|---|---|
-|0–12s| Public HTTPS, Trải nghiệm demo | M13 giúp QC ưu tiên ảnh đáng xem, mở web không cần cài extension. |
-|12–30s| Ảnh/nhãn/evidence, tọa độ |10BDD thật; predictions và queue cache. Xanh là nhãn, cam là nghi vấn; điểm không phải xác suất sai. |
-|30–50s| Ba verdict, ảnh tiếp | Lỗi thật: xác nhận lỗi; Bot nhầm: bác bỏ nghi vấn; Bỏ qua: chưa chắc. Minh họa tự động không phải kết quả kiểm tay. |
-|50–65s| Stats, reload | Lưu kết luận và giữ phiên/kết quả sau reload; verdict không Save annotation. |
-|65–85s| Baseline/gain curve public |2.000ảnh test, lỗi tiêm; recall ảnh27,67% so random20,15%. Proxy không phải thời gian thực đo. |
-|85–100s| Web intake local nối CVAT job21 | Chuyển môi trường LOCAL có quyền. Ảnh BDD thật, nhãn fixture kiểm phần mềm. |
-|100–120s| Intake đã đăng ký → kiểm lại | Job21 đã có từ lượt nghiệm thu trước: dùng lại snapshot nếu nguồn không đổi. Không gọi đây là tiếp nhận lần đầu. |
-|120–140s| Queue scoped, đọc nhãn đã Save | Scope riêng từng job;7checks hình học/ngữ cảnh. Detector/spec/GBM chưa có → kiểm một phần. |
-|140–165s| Quay về web live/CTA | Public10ảnh cố định; upload mới/CVAT public/pilot là phần còn chờ. Người QC quyết định cuối cùng. |
+| Mở đầu | Màn bắt đầu có hai lựa chọn | Trợ lý ưu tiên ảnh cần review; mở web, không extension. |
+| Demo BDD | Queue → ảnh/nhãn/evidence → danh sách box |10ảnh BDD, detector cache; điểm là rủi ro, không xác suất sai. |
+| Kết luận | Lỗi thật / Bot nhầm / Bỏ qua | Người review xác nhận. Thao tác minh họa tự động, không phải pilot. |
+| Mở lại | Reload, stats giữ3/10 | Verdict không sửa/Save annotation. |
+| Baseline | Gain curve trên trang kết quả | Lỗi tiêm offline, recall top20%27,67%; random20,15%. Chưa recall lỗi thật. |
+| Ảnh của tôi | Chọn ZIP YOLO1.1, kiểm dữ liệu và tạo queue | Nhận trực tiếp ZIP từ CVAT/Ultralytics; cần ảnh+nhãn. |
+| Kiểm một phần | Review ảnh tổng hợp có box trùng và ảnh clean |6tín hiệu hình học/ngữ cảnh; không detector/guideline trên ảnh upload. |
+| Tiếp tục | Lưu verdict, mở lại từ Bộ ảnh của tôi | Tiến độ còn nguyên trong phiên đăng nhập hiện tại. |
+| Kết | Màn bắt đầu, URL live | Giới hạn ảnh upload và điểm0 không bảo đảm đúng. |
 
-Timing là mục tiêu biên tập; dùng `video-record.json` và metadata MP4 để xác nhận thời lượng thực.
-Không dựng sự kiện Save/recheck trên public. Bằng chứng Save/recheck thật5,43→0 nằm riêng ở
-L06-real-CVAT-save-recheck.json/png, không biến screenshot thành cảnh Save trực tiếp trong video.
+Gói `CVAT-YOLO-1.1-mau.zip` có ảnh tổng hợp không vẽ sẵn box; nhãn trong file riêng, chỉ dùng kiểm phần mềm.
+Video không dựng cảnh CVAT Save/recheck, inference/Gemini hoặc human pilot chưa chạy.
+Chỉ rút ngắn đoạn chờ mạng dài nếu cần; các khoảng cắt nguồn và lý do nằm trong video-record.json.
+Không tăng tốc thao tác review để quảng cáo thời gian tiết kiệm. Thời lượng cuối xác minh từ MP4.
 
-## Tái quay trên máy hiện tại
-
-API8010 phải đang chạy theo [quickstart](quickstart.md); không restart hoặc đổi mapping giữa cảnh.
-Job21 đã có queue; không xóa registry/annotations để làm như lần đầu.
+Chạy lại bằng môi trường đang có, không cần account.env hoặc credentials CVAT:
 
 ```bash
-set -a
-source data/cvat-runtime/account.env
-set +a
-PLAYWRIGHT_BROWSERS_PATH="$PWD/data/runtime/playwright" python docs/mvp/capture_demo.py
+PLAYWRIGHT_BROWSERS_PATH="$PWD/data/runtime/playwright" .venv/bin/python docs/mvp/capture_demo.py
+.venv/bin/python docs/mvp/render_assets.py
 ```
 
-Backend giữ credentials CVAT; video chỉ quay web UI rồi thêm phụ đề. Không quay Save trực tiếp.
-Các verdict public là lượt demo tự động riêng; không đăng ký human pilot. Khi thu giọng người,
-dùng lời dẫn trong bảng, giữ nguyên nội dung các giới hạn và tổng thời lượng≤180giây.
-
-## Trước khi gửi BTC
-
-Mở MP4 từ đầu đến cuối, kiểm chữ/nhãn môi trường, không lộ mật khẩu/token hoặc desktop riêng.
-Kiểm MP4/PDF/thumbnail ở /submission bằng cửa sổ ẩn danh sau khi operator publish.
-Điền URL thực vào submission manifest; đường dẫn local chưa phải link nộp.
+Công cụ tạo screenshots ở data/mvp-submission/media để slide nguồn HTML dùng tại máy này;
+PDF đã nhúng ảnh và mở độc lập. Không đưa ảnh dữ liệu hoặc browser cookies vào source Git.
+Mở MP4 kiểm đầu/cuối, phụ đề, ảnh và các giới hạn trước nộp; xác nhận link /submission ẩn danh sau publish.

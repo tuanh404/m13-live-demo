@@ -121,3 +121,26 @@ BDD đã kiểm riêng, không copy dataset vào Git để ép test qua. Các te
 - Bằng chứng bổ sung: data/mvp-ui-refresh/. Lượt test đầu phát hiện fixture thiếu guest account và
   /web/review cố ý không chứa mapping: đã sửa fixture và dùng boolean cvat_mapped riêng, giữ URL riêng tư.
   Chỉ kết quả targeted-fixed/full cuối được dùng cho nghiệm thu.
+
+
+## UI refresh17/10 · 275330c
+
+- Màn bắt đầu dùng layout riêng, CTA demo rõ, account login thu gọn, trạng thái mạng/retry dễ hiểu.
+- Menu chỉ hiện baseline/hồ sơ đã có dữ liệu; pilot đúng cấu hình/quyền; CVAT đúng mapping/quyền.
+  Pilot luôn giữ CVAT ẩn. Không xóa adapter/local workflow hoặc bỏ qua auth/CSRF.
+- Local279passed1skipped120,31s; CI https://github.com/tuanh404/m13-live-demo/actions/runs/39050250157: CI các bước đạt, workflow GitHub còn pending. Ruff/checker/wheel đạt.
+- Public Chrome sạch kiểm entry/desktop/mobile, vào demo, baseline,3artifact links, reload/logout;
+  phiên cũ vẫn3/10, stats nguyên. Không ghi verdict thử mới. Bằng chứng data/mvp-ui-refresh/.
+- Deploy chỉ repo private/Render hiện có, không đổi env/bundle/schema hoặc dữ liệu, không chi phí.
+- Video137,92s giữ nguyên nội dung chức năng, được quay ở runtime bfb498e; màn entry hiện tại mới hơn.
+  Không coi UI refresh là human pilot hoặc usability đã được người mới nghiệm thu.
+
+
+## Bổ sung18/10 · upload và media
+
+Runtimec94265b: full local316passed1skipped, CI39057818496 xanh; browser/extension/PostgreSQL bật.
+CVATYOLO1.1/Ultralytics: class order, source mapping/hash, traversal, thiếu ảnh, retry, ownership,
+three-verdict/reload và restart đã kiểm. Bằng chứng data/mvp-yolo-import/.
+Video mới quay chính runtime này; PDF12trang/không tràn, footer captions không che giao diện,
+MP4≤180giây và link/hash/playback được kiểm riêng trong data/mvp-media-refresh/.
+CI runtime cũ không được coi là CI riêng cho nội dung mỹ thuật mới; không đổi backend/API ở lượt media.

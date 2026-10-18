@@ -27,7 +27,13 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     parser = argparse.ArgumentParser()
     parser.add_argument("--log", type=Path, default=ROOT / "data/mvp-final/pytest-final.log")
+    parser.add_argument(
+        "--source-public",
+        action="store_true",
+        help="Operator has verified anonymous access to the source repository",
+    )
     args = parser.parse_args()
+    source_public = args.source_public
     log = args.log
     deploy_path = ROOT / "data/mvp-final/03-public-deployment.json"
     deploy = json.loads(deploy_path.read_text()) if deploy_path.exists() else {}
@@ -55,8 +61,14 @@ def main():
         "usability_with_new_person": "not_evaluated",
         "public_deploy_commit": deploy.get("commit"),
         "remote_ci": deploy.get("ci_url"),
+        "remote_ci_conclusion": deploy.get("ci_conclusion"),
+        "remote_ci_workflow_status": deploy.get("ci_workflow_status", "completed"),
         "L06_changes_deployed": deploy.get("status") == "live_verified",
         "team_timing": "10 images,20/45 minutes, team-reported; logs not verified",
+        "backend_test_commit": deploy.get("commit"),
+        "media_checks": json.loads((ROOT / "data/mvp-media-refresh/media-verification.json").read_text())
+        if (ROOT / "data/mvp-media-refresh/media-verification.json").exists()
+        else None,
     }
     (ROOT / "reports/mvp-verification.json").write_text(json.dumps(verification, indent=2) + "\n")
     names = set()
@@ -112,6 +124,10 @@ def main():
         "team_timing": "reports/team-timing.json",
         "detector_cache": "docs/mvp/detector-cache.md",
         "weekly_release": "reports/weekly-mvp-2026-10-17.md",
+        "upload_guide": "docs/mvp/upload-quickstart.md",
+        "media_refresh": "docs/mvp/media-refresh.md",
+        "editable_slides": "data/mvp-submission/M13-slides-editable.zip",
+        "weekly_latest": "reports/weekly-mvp-2026-10-18.md",
     }
     artifacts = {}
     for key, name in entries.items():
@@ -133,25 +149,27 @@ def main():
         "description_vi": "Trợ lý ưu tiên kiểm nhãn detection2D trên BDD100K: xếp hàng đợi rủi ro, "
         "hiện lý do và box nghi vấn để QC đối chiếu, lưu kết luận và thống kê.",
         "checked_at": stamp,
-        "plan": "6-lenh-v1/cvat-job-intake-v1/L06/release-2026-10-17",
+        "plan": "6-lenh-v1/L06/media-refresh-2026-10-18",
         "live": {
             "url": "https://m13-live-demo.onrender.com",
             "access": "public; Trải nghiệm demo",
-            "scope": "10 real BDD demo images, frozen predictions/queue; no upload/CVAT public",
+            "scope": "10 real BDD demo images with cached predictions; private YOLO detection uploads "
+            "with six partial geometry/context checks; no public CVAT or new-image detector inference",
         },
         "source": {
             "team_url": "https://github.com/cuongherok4/qc2d_auto_assistant",
-            "team_unauthenticated_status": 200,
+            "team_access": "L06 historical public check; not final-source publication",
             "team_contains_L06_diff": False,
             "deploy_repo": "https://github.com/tuanh404/m13-live-demo",
-            "deploy_repo_visibility": "private; unauthenticated404",
-            "L06_source": "local sanitized source ZIP and private deploy repo; team repo unchanged",
+            "deploy_repo_visibility": "public_verified" if source_public else "not_verified_by_this_build",
+            "latest_source_url": "https://github.com/tuanh404/m13-live-demo" if source_public else None,
+            "L06_source": "sanitized source ZIP and separate source repository; team repo unchanged",
         },
         "artifacts": artifacts,
         "video": json.loads((out / "video-record.json").read_text()),
-        "submission_status": "NOT_SUBMITTED; source sharing requires owner action",
-        "remaining_human_actions": [
-            "Share sanitized source ZIP or authorize a source publication channel",
+        "submission_status": "NOT_SUBMITTED",
+        "remaining_human_actions": ([] if source_public else ["Verify source publication access"])
+        + [
             "Human usability and30-image/two-reviewer pilot, if claiming real measured benefit",
             "Fill actual shared URLs and submit BTC form",
         ],

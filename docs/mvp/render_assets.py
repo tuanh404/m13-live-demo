@@ -19,6 +19,7 @@ def main():
         page.screenshot(path=str(output / "thumbnail.png"))
         page.set_viewport_size({"width": 1280, "height": 720})
         page.goto((ROOT / "docs/mvp/pitch.html").as_uri())
+        page.wait_for_function("() => [...document.images].every(im => im.complete && im.naturalWidth > 0)")
         page.locator("#mode").click()
         overflow = page.locator(".slide").evaluate_all("""els => els.map((el,i)=>{
             document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));
@@ -28,6 +29,10 @@ def main():
         if overflow:
             raise ValueError(f"Slides overflow: {overflow}")
         page.pdf(path=str(output / "pitch.pdf"), width="1280px", height="720px", print_background=True)
+        page.locator("nav").evaluate("el => el.style.display = 'none'")
+        for i in range(12):
+            page.evaluate("i => show(i)", i)
+            page.screenshot(path=str(output / f"slide-{i + 1:02}.png"))
         page.evaluate("show(0)")
         page.screenshot(path=str(output / "pitch-cover.png"))
         browser.close()

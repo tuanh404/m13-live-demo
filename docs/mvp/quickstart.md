@@ -14,8 +14,9 @@ Menu chỉ hiện chức năng môi trường đang cung cấp: baseline khi bá
 pilot khi được cấu hình và có quyền, CVAT khi ảnh có mapping và người dùng có quyền dùng.
 Public demo không hiện các nút CVAT/pilot không dùng được; các adapter local vẫn giữ nguyên.
 
-Điểm0 vẫn có thể có lỗi. Verdict chưa sửa/Save annotation. Đây là demo10ảnh cố định,
-chưa nhận upload ảnh/nhãn mới, không phải pilot. Mục baseline là lỗi tiêm, không phải số đo người thật.
+Điểm0 vẫn có thể có lỗi. Verdict chưa sửa/Save annotation. Demo mẫu có10ảnh cố định; muốn dùng ảnh riêng, chọn **Kiểm tra bộ ảnh của tôi** và
+tải nguyên ZIP YOLO1.1/Ultralytics Detection có ảnh+nhãn. Xem [giới hạn upload](upload-quickstart.md).
+Hai luồng không phải pilot người thật. Mục baseline là lỗi tiêm, không phải số đo người thật.
 
 ## Người review CVAT local đã được operator cấu hình
 

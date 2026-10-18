@@ -39,3 +39,16 @@ configs/guidelines/drafts/
 # Gói/khoá ký extension tạo bằng Chrome "Pack extension"
 *.crx
 *.pem
+
+# Public source repository: local credentials and generated state
+*.env
+.env.*
+!.env.example
+*.private.json
+*.private.yaml
+*.private.yml
+/build/
+/dist/
+/.aws/
+/.codex/
+/.agents/
